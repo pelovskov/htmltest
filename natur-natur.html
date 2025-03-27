@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Naturgruppen Roskilde</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <style>
+      /* Custom styles for the buttons with icons */
+      .custom-button {
+        @apply bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg py-3 px-6 transition duration-300 ease-in-out flex items-center justify-center;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Add shadow */
+      }
+      .custom-button:hover {
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15); /* Increase shadow on hover */
+        transform: translateY(-2px); /* Move up slightly on hover */
+      }
+      .button-icon {
+        margin-right: 10px; /* Adjust spacing between icon and text */
+        height: 24px; /* Icon size */
+        width: 24px;
+      }
+      .red-cross-logo {
+        /* Røde Kors logo styling */
+        height: 80px; /* Juster størrelsen efter behov */
+        margin-bottom: 20px;
+      }
+      .framed-section {
+        background-color: white; /* Hvid baggrund for rammen */
+        padding: 20px; /* Indvendig padding */
+        border-radius: 12px; /* Runde hjørner for rammen */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Let skygge for rammen */
+        margin-top: 20px; /* Plads over rammen */
+        margin-bottom: 20px; /* Plads under rammen */
+      }
+    </style>
+</head>
+<body class="bg-gray-800 font-sans antialiased"> <div class="container mx-auto px-4 py-8">
+        <div class="framed-section">
+            <div class="text-center mb-8">
+                <img src="https://roskilde.drk.dk/wp-content/themes/drk-premium-theme/images/logo.png" alt="Røde Kors Logo" class="red-cross-logo mx-auto"> <h1 class="text-3xl font-bold text-red-700">Naturgruppen Roskilde</h1> <p class="text-gray-700 mt-2">Organiseret under Røde Kors Roskilde</p>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <a href="https://sites.google.com/view/mf-roskilde/hjem" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/users.svg" alt="Mandefællesskaberne" class="button-icon" />
+                    <span class="button-text">Mandefællesskaberne i Roskilde</span>
+                </a>
+                <a href="https://sites.google.com/view/mf-roskilde/ud-i-naturen-nu" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/tree-pine.svg" alt="Ud i Naturen" class="button-icon" />
+                    <span class="button-text">Ud i Naturen - Nu</span>
+                </a>
+                <a href="https://sites.google.com/view/mf-roskilde/kalender" class="custom-button" target="_blank" rel="noopener noreferrer">
+                   <img src="https://unpkg.com/lucide-static@latest/icons/calendar-days.svg" alt="Kalender" class="button-icon" />
+                    <span class="button-text">Kalender</span>
+                </a>
+                <a href="https://sites.google.com/view/mf-roskilde/kontakter" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/envelope.svg" alt="Kontakt information" class="button-icon" />
+                    <span class="button-text">Kontakt information - Nyhedsbrev</span>
+                </a>
+                <a href="https://sites.google.com/view/mf-roskilde/omtale" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/newspaper.svg" alt="Seneste nyt" class="button-icon" />
+                    <span class="button-text">Seneste nyt</span>
+                </a>
+                <a href="https://sfbbilleder.eu/index.php?/category/17" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/image.svg" alt="Billeder" class="button-icon" />
+                    <span class="button-text">Billeder</span>
+                </a>
+                <a href="https://spingo.my.canva.site/rk-aktiviteter" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/heart.svg" alt="Røde Kors Roskilde" class="button-icon" />
+                    <span class="button-text">Røde Kors Roskilde</span>
+                </a>
+                <a href="https://www.facebook.com/groups/251670760706273" class="custom-button" target="_blank" rel="noopener noreferrer">
+                    <img src="https://unpkg.com/lucide-static@latest/icons/facebook.svg" alt="Følg os på Facebook" class="button-icon" />
+                    <span class="button-text">Følg os på Facebook</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
