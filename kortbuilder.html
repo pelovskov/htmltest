@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kortbuilder</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+  :root{
+    --primary:#385261; --primary-dark:#26383f; --bg:#f4f5f6; --border:#d7dde1;
+    --ok:#2e7d32; --warn:#b45309; --danger:#b3261e;
+  }
+  *{box-sizing:border-box;}
+  body,html{margin:0;padding:0;height:100%;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg);color:#1a2b33;}
+  #topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  #topbar h1{margin:0;font-size:1.25rem;flex:1;min-width:200px;}
+  #topbar .sub{font-size:0.8rem;opacity:0.85;width:100%;margin-top:2px;}
+  .btn{border:none;border-radius:6px;padding:9px 14px;font-size:0.9rem;font-weight:600;cursor:pointer;transition:filter .15s;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn-primary{background:#fff;color:var(--primary);}
+  .btn-ghost{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.4);}
+  .btn-danger{background:var(--danger);color:#fff;}
+  .btn-small{padding:5px 9px;font-size:0.78rem;border-radius:5px;}
+
+  #layout{display:grid;grid-template-columns:420px 1fr;height:calc(100% - 68px);}
+  @media (max-width:980px){ #layout{grid-template-columns:1fr; height:auto;} #map-preview{height:340px;} }
+
+  #panel{overflow-y:auto;padding:16px;background:#fff;border-right:1px solid var(--border);}
+  #map-col{position:relative;}
+  #map-preview{width:100%;height:100%;min-height:340px;}
+  #map-preview.leaflet-container{cursor:crosshair;}
+  #map-preview .leaflet-control,
+  #map-preview .leaflet-control *,
+  #map-preview .leaflet-marker-icon,
+  #map-preview .leaflet-popup,
+  #map-preview .leaflet-popup *{cursor:pointer;}
+  #map-hint{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:rgba(26,43,51,0.88);color:#fff;padding:6px 14px;border-radius:20px;font-size:0.82rem;z-index:1000;pointer-events:none;}
+
+  fieldset{border:1px solid var(--border);border-radius:8px;margin:0 0 16px;padding:12px 14px;}
+  legend{font-weight:700;font-size:0.85rem;color:var(--primary);padding:0 6px;}
+  label{display:block;font-size:0.82rem;font-weight:600;margin:8px 0 3px;color:#33474f;}
+  label.req::after{content:" *";color:var(--danger);}
+  input[type=text], input[type=number], input[type=url], textarea, select{
+    width:100%;padding:8px 10px;border:1px solid #98a6ad;border-radius:6px;font-size:0.9rem;font-family:inherit;
+  }
+  textarea{resize:vertical;min-height:64px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .helptext{font-size:0.75rem;color:#5a6b72;margin-top:3px;}
+
+  #imgPreviewWrap{display:flex;align-items:center;gap:10px;margin-top:6px;}
+  #imgPreview{width:64px;height:64px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:none;background:#eee;}
+  #imgMeta{font-size:0.78rem;color:#33474f;}
+
+  .form-actions{display:flex;gap:8px;margin-top:10px;}
+  .form-actions .btn{flex:1;}
+  #formStatus{font-size:0.8rem;font-weight:700;margin-bottom:6px;}
+
+  #locList{list-style:none;margin:0;padding:0;}
+  .loc-item{border:1px solid var(--border);border-radius:8px;padding:9px 10px;margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;background:#fafcfd;}
+  .loc-item.editing{border-color:var(--primary);box-shadow:0 0 0 2px rgba(56,82,97,0.15);}
+  .loc-item .loc-main{flex:1;cursor:pointer;min-width:0;}
+  .loc-item h4{margin:0 0 2px;font-size:0.95rem;}
+  .loc-item .meta{font-size:0.76rem;color:#5a6b72;}
+  .loc-item .badge{display:inline-block;background:#eef2f5;border:1px solid #9aaeb9;border-radius:10px;padding:1px 8px;font-size:0.72rem;margin-top:3px;}
+  .loc-item .nolatlng{color:var(--warn);font-weight:700;}
+  .loc-btns{display:flex;flex-direction:column;gap:4px;}
+
+  #importArea{width:100%;min-height:90px;font-family:monospace;font-size:0.78rem;}
+  details summary{cursor:pointer;font-weight:700;color:var(--primary);font-size:0.85rem;padding:4px 0;}
+  #status-toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1a2b33;color:#fff;padding:9px 18px;border-radius:8px;font-size:0.85rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:3000;}
+  #status-toast.show{opacity:1;}
+  #count-pill{background:rgba(255,255,255,0.2);border-radius:12px;padding:3px 10px;font-size:0.78rem;}
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <h1>🗺️ Kortbuilder <span id="count-pill">0 steder</span></h1>
+  <button class="btn btn-ghost" id="btnImportToggle">Importér data</button>
+  <button class="btn btn-ghost" id="btnDownloadJson">Download JSON</button>
+  <button class="btn btn-danger" id="btnClearAll">Ryd alt</button>
+  <button class="btn btn-primary" id="btnExport">⬇ Eksportér kort (HTML)</button>
+  <div class="sub">Byg data til dit interaktive kort her, og eksportér én selvstændig HTML-fil med det hele indlejret. Dit arbejde gemmes automatisk i denne browser.</div>
+</div>
+
+<div id="layout">
+  <div id="panel">
+
+    <details id="importDetails">
+      <summary>Importér eksisterende data (JSON)</summary>
+      <div style="margin-top:8px;">
+        <p class="helptext">Indsæt indholdet af en eksisterende datafil (fx musicon.json) for at redigere videre på den. Dette erstatter listen nedenfor.</p>
+        <textarea id="importArea" placeholder='[{"navn":"...", "lat":55.62, "lng":12.08, ...}]'></textarea>
+        <div class="form-actions">
+          <button class="btn btn-primary btn-small" id="btnDoImport" style="flex:none;">Importér</button>
+          <label class="btn btn-ghost btn-small" style="flex:none;display:inline-flex;align-items:center;">
+            Vælg fil… <input type="file" id="importFile" accept=".json" style="display:none;">
+          </label>
+        </div>
+      </div>
+    </details>
+
+    <fieldset>
+      <legend>Kortets indstillinger</legend>
+      <label class="req">Titel (vises øverst på kortet)</label>
+      <input type="text" id="cfgTitel" value="Oplev bydelen" maxlength="80">
+
+      <label>Undertekst</label>
+      <input type="text" id="cfgUndertekst" value="Kultur, byliv og fællesskab" maxlength="120">
+
+      <div class="row2">
+        <div>
+          <label>"Tilbage"-linktekst</label>
+          <input type="text" id="cfgBackText" value="← Tilbage" maxlength="40">
+        </div>
+        <div>
+          <label>"Tilbage"-link (url)</label>
+          <input type="text" id="cfgBackUrl" value="index.html">
+        </div>
+      </div>
+      <p class="helptext">Lad linkfeltet stå tomt, hvis kortet ikke skal have en tilbage-knap.</p>
+
+      <div class="row2">
+        <div><label>Kort-center: bredde (lat)</label><input type="number" step="any" id="cfgLat" value="55.6265"></div>
+        <div><label>Kort-center: længde (lng)</label><input type="number" step="any" id="cfgLng" value="12.0845"></div>
+      </div>
+      <div class="row2">
+        <div><label>Zoomniveau (1-19)</label><input type="number" min="1" max="19" id="cfgZoom" value="16"></div>
+        <div style="align-self:end;"><button class="btn btn-ghost btn-small" id="btnUseCurrentView" style="width:100%;">Brug nuværende kortudsnit</button></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend id="formLegend">Tilføj sted</legend>
+      <div id="formStatus"></div>
+
+      <label class="req">Navn</label>
+      <input type="text" id="fNavn" maxlength="120">
+
+      <label>Type / kategori</label>
+      <input type="text" id="fType" list="typeList" placeholder="fx Restaurant &amp; Café">
+      <datalist id="typeList"></datalist>
+
+      <label>Beskrivelse</label>
+      <textarea id="fBeskrivelse" maxlength="1000"></textarea>
+
+      <label>Adresse</label>
+      <input type="text" id="fAdresse">
+
+      <div class="row2">
+        <div><label class="req">Lat</label><input type="number" step="any" id="fLat"></div>
+        <div><label class="req">Lng</label><input type="number" step="any" id="fLng"></div>
+      </div>
+      <p class="helptext">Klik på kortet til højre for at sætte koordinaterne automatisk.</p>
+
+      <label>Åbningstider</label>
+      <input type="text" id="fAabningstider" placeholder="fx Tirs-Søn: 10:00 - 17:00">
+
+      <label>Hjemmeside</label>
+      <input type="url" id="fHjemmeside" placeholder="https://...">
+
+      <label>Billede</label>
+      <input type="file" id="fBilledeFile" accept="image/*">
+      <p class="helptext">Billedet komprimeres automatisk og indlejres direkte i kortets datafil — der skal ikke uploades billeder til en server.</p>
+      <div id="imgPreviewWrap">
+        <img id="imgPreview" alt="">
+        <span id="imgMeta"></span>
+      </div>
+      <input type="hidden" id="fBilledeData" value="">
+      <div class="form-actions" style="margin-top:4px;">
+        <button class="btn btn-ghost btn-small" id="btnRemoveImg" style="flex:none;">Fjern billede</button>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" id="btnSaveLoc">Tilføj til kortet</button>
+        <button class="btn btn-ghost" id="btnCancelEdit" style="display:none;">Annullér redigering</button>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Steder på kortet (<span id="locCount">0</span>)</legend>
+      <ul id="locList"></ul>
+      <p class="helptext" id="emptyHint">Ingen steder tilføjet endnu.</p>
+    </fieldset>
+
+  </div>
+
+  <div id="map-col">
+    <div id="map-hint">Klik på kortet for at sætte koordinater</div>
+    <div id="map-preview"></div>
+  </div>
+</div>
+
+<div id="status-toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function(){
+  const DRAFT_KEY = 'kortbuilder_draft_v1';
+  let data = [];          // liste over steder
+  let editingIndex = null; // index der redigeres, eller null = ny
+  let previewMarkers = new Map();
+
+  // ---------- Leaflet preview map ----------
+  const map = L.map('map-preview').setView([55.6265, 12.0845], 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap-bidragydere'
+  }).addTo(map);
+
+  map.on('click', e => {
+    document.getElementById('fLat').value = e.latlng.lat.toFixed(7);
+    document.getElementById('fLng').value = e.latlng.lng.toFixed(7);
+    toast('Koordinater sat fra kortklik');
+  });
+
+  function refreshPreviewMarkers(){
+    previewMarkers.forEach(m => map.removeLayer(m));
+    previewMarkers.clear();
+    data.forEach((sted, i) => {
+      const lat = parseFloat(sted.lat), lng = parseFloat(sted.lng);
+      if(!isNaN(lat) && !isNaN(lng)){
+        const m = L.marker([lat,lng]).addTo(map).bindPopup(`<strong>${escapeHtml(sted.navn||'(uden navn)')}</strong>`);
+        previewMarkers.set(i, m);
+      }
+    });
+  }
+
+  document.getElementById('btnUseCurrentView').addEventListener('click', () => {
+    const c = map.getCenter();
+    document.getElementById('cfgLat').value = c.lat.toFixed(7);
+    document.getElementById('cfgLng').value = c.lng.toFixed(7);
+    document.getElementById('cfgZoom').value = map.getZoom();
+    toast('Kortcenter opdateret');
+  });
+
+  // ---------- Helpers ----------
+  function escapeHtml(s){
+    return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function toast(msg){
+    const t = document.getElementById('status-toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
+  // ---------- Billedkomprimering ----------
+  const fBilledeFile = document.getElementById('fBilledeFile');
+  const fBilledeData = document.getElementById('fBilledeData');
+  const imgPreview = document.getElementById('imgPreview');
+  const imgMeta = document.getElementById('imgMeta');
+
+  fBilledeFile.addEventListener('change', () => {
+    const file = fBilledeFile.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_W = 900;
+        const scale = Math.min(1, MAX_W / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        let quality = 0.75;
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // reducér yderligere hvis stadig stort
+        while(dataUrl.length > 220000 && quality > 0.35){
+          quality -= 0.1;
+          dataUrl = canvas.toDataURL('image/jpeg', quality);
+        }
+        fBilledeData.value = dataUrl;
+        imgPreview.src = dataUrl;
+        imgPreview.style.display = 'block';
+        const kb = Math.round(dataUrl.length * 0.75 / 1024);
+        imgMeta.textContent = `${canvas.width}×${canvas.height}px, ~${kb} KB (indlejret)`;
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById('btnRemoveImg').addEventListener('click', () => {
+    fBilledeData.value = ''; fBilledeFile.value = '';
+    imgPreview.style.display = 'none'; imgPreview.src=''; imgMeta.textContent='';
+  });
+
+  // ---------- Formular: gem/tilføj sted ----------
+  const fields = ['fNavn','fType','fBeskrivelse','fAdresse','fLat','fLng','fAabningstider','fHjemmeside'];
+
+  function clearForm(){
+    fields.forEach(id => document.getElementById(id).value = '');
+    fBilledeData.value=''; fBilledeFile.value='';
+    imgPreview.style.display='none'; imgPreview.src=''; imgMeta.textContent='';
+    editingIndex = null;
+    document.getElementById('formLegend').textContent = 'Tilføj sted';
+    document.getElementById('btnSaveLoc').textContent = 'Tilføj til kortet';
+    document.getElementById('btnCancelEdit').style.display = 'none';
+    document.getElementById('formStatus').textContent = '';
+  }
+
+  function loadFormFromLoc(sted){
+    document.getElementById('fNavn').value = sted.navn || '';
+    document.getElementById('fType').value = sted.type || '';
+    document.getElementById('fBeskrivelse').value = sted.beskrivelse || '';
+    document.getElementById('fAdresse').value = sted.adresse || '';
+    document.getElementById('fLat').value = sted.lat ?? '';
+    document.getElementById('fLng').value = sted.lng ?? '';
+    document.getElementById('fAabningstider').value = sted.aabningstider || '';
+    document.getElementById('fHjemmeside').value = sted.hjemmeside || '';
+    fBilledeData.value = sted.billed_url || '';
+    if(sted.billed_url){ imgPreview.src = sted.billed_url; imgPreview.style.display='block'; imgMeta.textContent='Eksisterende billede'; }
+    else { imgPreview.style.display='none'; imgMeta.textContent=''; }
+  }
+
+  document.getElementById('btnSaveLoc').addEventListener('click', () => {
+    const navn = document.getElementById('fNavn').value.trim();
+    const lat = document.getElementById('fLat').value;
+    const lng = document.getElementById('fLng').value;
+    const statusEl = document.getElementById('formStatus');
+    if(!navn){ statusEl.textContent = '⚠ Navn er påkrævet.'; statusEl.style.color='var(--danger)'; return; }
+    if(lat === '' || lng === '' || isNaN(parseFloat(lat)) || isNaN(parseFloat(lng))){
+      statusEl.textContent = '⚠ Lat/lng er påkrævet (klik på kortet, eller indtast).'; statusEl.style.color='var(--danger)'; return;
+    }
+
+    const sted = {
+      id: (editingIndex !== null && data[editingIndex].id) ? data[editingIndex].id : 'sted_' + Math.random().toString(36).slice(2,11),
+      navn,
+      type: document.getElementById('fType').value.trim(),
+      beskrivelse: document.getElementById('fBeskrivelse').value.trim(),
+      adresse: document.getElementById('fAdresse').value.trim(),
+      lat: parseFloat(lat),
+      lng: parseFloat(lng),
+      aabningstider: document.getElementById('fAabningstider').value.trim(),
+      hjemmeside: document.getElementById('fHjemmeside').value.trim(),
+      billed_url: fBilledeData.value || ''
+    };
+
+    if(editingIndex !== null){ data[editingIndex] = sted; toast('Sted opdateret'); }
+    else { data.push(sted); toast('Sted tilføjet'); }
+
+    clearForm();
+    renderList(); refreshPreviewMarkers(); refreshTypeList(); saveDraft();
+  });
+
+  document.getElementById('btnCancelEdit').addEventListener('click', clearForm);
+
+  // ---------- Liste ----------
+  function renderList(){
+    const ul = document.getElementById('locList');
+    ul.innerHTML = '';
+    document.getElementById('locCount').textContent = data.length;
+    document.getElementById('count-pill').textContent = data.length + ' steder';
+    document.getElementById('emptyHint').style.display = data.length ? 'none' : 'block';
+
+    data.forEach((sted, i) => {
+      const li = document.createElement('li');
+      li.className = 'loc-item' + (i === editingIndex ? ' editing' : '');
+      const hasCoords = !isNaN(parseFloat(sted.lat)) && !isNaN(parseFloat(sted.lng));
+      li.innerHTML = `
+        <div class="loc-main">
+          <h4>${escapeHtml(sted.navn)}</h4>
+          <div class="meta">${escapeHtml(sted.adresse||'')}</div>
+          ${sted.type ? `<span class="badge">${escapeHtml(sted.type)}</span>` : ''}
+          ${!hasCoords ? '<div class="nolatlng">⚠ Mangler koordinater</div>' : ''}
+        </div>
+        <div class="loc-btns">
+          <button class="btn btn-ghost btn-small" data-act="up" data-i="${i}" title="Flyt op">↑</button>
+          <button class="btn btn-ghost btn-small" data-act="down" data-i="${i}" title="Flyt ned">↓</button>
+          <button class="btn btn-danger btn-small" data-act="del" data-i="${i}" title="Slet">✕</button>
+        </div>
+      `;
+      li.querySelector('.loc-main').addEventListener('click', () => {
+        editingIndex = i;
+        loadFormFromLoc(sted);
+        document.getElementById('formLegend').textContent = 'Redigér sted';
+        document.getElementById('btnSaveLoc').textContent = 'Gem ændringer';
+        document.getElementById('btnCancelEdit').style.display = 'inline-block';
+        document.getElementById('formStatus').textContent = '';
+        renderList();
+        window.scrollTo({top:0, behavior:'smooth'});
+      });
+      ul.appendChild(li);
+    });
+
+    ul.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const i = parseInt(btn.dataset.i, 10);
+        const act = btn.dataset.act;
+        if(act === 'del'){
+          if(confirm(`Slet "${data[i].navn}"?`)){
+            data.splice(i,1);
+            if(editingIndex === i) clearForm();
+            renderList(); refreshPreviewMarkers(); saveDraft();
+          }
+        } else if(act === 'up' && i > 0){
+          [data[i-1], data[i]] = [data[i], data[i-1]];
+          renderList(); saveDraft();
+        } else if(act === 'down' && i < data.length-1){
+          [data[i+1], data[i]] = [data[i], data[i+1]];
+          renderList(); saveDraft();
+        }
+      });
+    });
+  }
+
+  function refreshTypeList(){
+    const dl = document.getElementById('typeList');
+    dl.innerHTML = '';
+    [...new Set(data.map(s=>s.type).filter(Boolean))].sort().forEach(t=>{
+      const opt = document.createElement('option'); opt.value = t; dl.appendChild(opt);
+    });
+  }
+
+  // ---------- Import ----------
+  document.getElementById('btnDoImport').addEventListener('click', () => {
+    const raw = document.getElementById('importArea').value.trim();
+    if(!raw) return;
+    try{
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) throw new Error('Data skal være et array');
+      data = parsed;
+      clearForm(); renderList(); refreshPreviewMarkers(); refreshTypeList(); saveDraft();
+      toast(`${data.length} steder importeret`);
+      document.getElementById('importDetails').removeAttribute('open');
+    }catch(err){
+      alert('Kunne ikke læse JSON: ' + err.message);
+    }
+  });
+  document.getElementById('importFile').addEventListener('change', () => {
+    const file = document.getElementById('importFile').files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { document.getElementById('importArea').value = ev.target.result; };
+    reader.readAsText(file);
+  });
+  document.getElementById('btnImportToggle').addEventListener('click', () => {
+    const d = document.getElementById('importDetails');
+    d.open = !d.open; d.scrollIntoView({behavior:'smooth'});
+  });
+
+  // ---------- Ryd alt ----------
+  document.getElementById('btnClearAll').addEventListener('click', () => {
+    if(confirm('Slet alle steder og indstillinger fra denne builder? Dette kan ikke fortrydes.')){
+      data = []; clearForm(); renderList(); refreshPreviewMarkers();
+      localStorage.removeItem(DRAFT_KEY);
+      toast('Ryddet');
+    }
+  });
+
+  // ---------- Download rå JSON ----------
+  document.getElementById('btnDownloadJson').addEventListener('click', () => {
+    downloadFile('kort-data.json', JSON.stringify(data, null, 4), 'application/json');
+  });
+
+  function downloadFile(filename, content, mime){
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+  }
+
+  // ---------- Eksportér fuldt kort ----------
+  document.getElementById('btnExport').addEventListener('click', () => {
+    if(data.length === 0 && !confirm('Der er ingen steder tilføjet endnu. Eksportér alligevel?')) return;
+    const missing = data.filter(s => isNaN(parseFloat(s.lat)) || isNaN(parseFloat(s.lng)));
+    if(missing.length && !confirm(`${missing.length} sted(er) mangler koordinater og vises ikke som markør. Fortsæt?`)) return;
+
+    const titel = document.getElementById('cfgTitel').value.trim() || 'Kort';
+    const undertekst = document.getElementById('cfgUndertekst').value.trim();
+    const backText = document.getElementById('cfgBackText').value.trim();
+    const backUrl = document.getElementById('cfgBackUrl').value.trim();
+    const centerLat = parseFloat(document.getElementById('cfgLat').value) || 55.6265;
+    const centerLng = parseFloat(document.getElementById('cfgLng').value) || 12.0845;
+    const zoom = parseInt(document.getElementById('cfgZoom').value, 10) || 16;
+
+    const html = buildExportHtml({titel, undertekst, backText, backUrl, centerLat, centerLng, zoom, data});
+    const safeName = titel.toLowerCase().replace(/[^a-z0-9æøå]+/gi,'-').replace(/^-+|-+$/g,'') || 'kort';
+    downloadFile(safeName + '.html', html, 'text/html');
+    toast('Kort eksporteret');
+  });
+
+  function buildExportHtml(cfg){
+    const backLinkHtml = cfg.backUrl
+      ? `<a href="${escapeHtml(cfg.backUrl)}" class="back-to-chat">${escapeHtml(cfg.backText || '← Tilbage')}</a>`
+      : '';
+    const dataJson = JSON.stringify(cfg.data);
+
+    return `<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>${escapeHtml(cfg.titel)}</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+    <style>
+        :root {
+            --sidebar-width: 380px;
+            --primary-color: #385261;
+            --header-height: 60px;
+        }
+        body, html {
+            margin: 0; padding: 0; height: 100%; height: 100dvh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden; overscroll-behavior: none;
+        }
+        *:focus-visible { outline: 3px solid #ff9800 !important; outline-offset: -2px; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+        #container { display: grid; height: 100%; width: 100%; grid-template-columns: var(--sidebar-width) 1fr; grid-template-areas: "sidebar map"; }
+        #sidebar {
+            grid-area: sidebar; background: #f8f9fa; border-right: 1px solid #ddd;
+            display: flex; flex-direction: column; height: 100%; overflow: hidden; z-index: 1001; box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        #header { padding: 20px; background: var(--primary-color); color: white; flex-shrink: 0; }
+        #header h1 { margin: 0; font-size: 1.4rem; }
+        #header p { margin: 5px 0 0; font-size: 0.95rem; opacity: 0.9; }
+        .back-to-chat { display: inline-block; margin-top: 15px; color: white; text-decoration: underline; font-size: 1rem; font-weight: bold; }
+        #controls { padding: 15px; background: white; border-bottom: 1px solid #eee; flex-shrink: 0; }
+        .search-wrapper { position: relative; margin-bottom: 10px; }
+        input[type="text"] { width: 100%; padding: 12px; padding-right: 44px; border: 1px solid #767676; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        select { width: 100%; padding: 12px; border: 1px solid #767676; border-radius: 6px; font-size: 16px; background: white; }
+        #clearSearch {
+            position: absolute; right: 0; top: 0; width: 44px; height: 100%;
+            background: none; border: none; font-size: 1.5rem; color: #333;
+            cursor: pointer; display: none;
+        }
+        #sted-list { flex: 1; overflow-y: auto; padding: 10px; -webkit-overflow-scrolling: touch; }
+        .sted-item {
+            background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px;
+            border: 1px solid #ccc; cursor: pointer; transition: all 0.2s;
+        }
+        .sted-item h3 { margin: 0 0 5px 0; color: #1a2b33; font-size: 1.1rem; }
+        .sted-item span.adr { font-size: 0.9rem; color: #444; display: block; margin-bottom: 8px; }
+        .badge { display: inline-block; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+        .badge-type { background: #eef2f5; color: #1a2b33; border: 1px solid #9aaeb9; }
+        #map { grid-area: map; width: 100%; height: 100%; z-index: 1; }
+        .leaflet-touch .leaflet-control-zoom a { width: 44px; height: 44px; line-height: 44px; font-size: 22px; color:#333; }
+        .leaflet-control-locate { width: 44px !important; height: 44px !important; font-size: 24px !important; display: flex; align-items: center; justify-content: center; background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px; cursor: pointer; }
+        .leaflet-popup-content { margin: 0; width: 300px !important; }
+        .popup-header { background: var(--primary-color); color: white; padding: 15px; }
+        .popup-header h2 { margin: 0; font-size: 1.2rem; }
+        .popup-body { padding: 15px; max-height: 300px; overflow-y: auto; }
+        .popup-body img { width: 100%; border-radius: 4px; margin-bottom: 10px; }
+        .popup-body p { margin-top: 0; font-size: 1rem; line-height: 1.5; color: #222; }
+        #mobile-nav { display: none; }
+        @media (max-width: 900px) {
+            #container { display: block; position: relative; padding-bottom: var(--header-height); }
+            #sidebar, #map { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - var(--header-height)); }
+            body.view-list #map { visibility: hidden; z-index: -1; }
+            body.view-list #sidebar { visibility: visible; z-index: 10; }
+            body.view-map #sidebar { visibility: hidden; z-index: -1; }
+            body.view-map #map { visibility: visible; z-index: 10; }
+            #mobile-nav {
+                display: flex; position: fixed; bottom: 0; left: 0; width: 100%; height: var(--header-height);
+                background: white; border-top: 1px solid #ccc; z-index: 2000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            }
+            .nav-btn {
+                flex: 1; border: none; background: white; color: #555;
+                font-size: 0.95rem; font-weight: bold; cursor: pointer;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+            }
+            .nav-btn.active { background: #eef2f5; color: var(--primary-color); border-top: 4px solid var(--primary-color); }
+        }
+    </style>
+</head>
+<body class="view-list">
+
+<div id="container">
+    <div id="sidebar">
+        <div id="header">
+            <h1>${escapeHtml(cfg.titel)}</h1>
+            ${cfg.undertekst ? `<p>${escapeHtml(cfg.undertekst)}</p>` : ''}
+            ${backLinkHtml}
+        </div>
+        <div id="controls">
+            <div id="search-announcer" class="sr-only" aria-live="polite"></div>
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" placeholder="Søg (navn, adresse, info)..." aria-label="Søg efter steder">
+                <button id="clearSearch" aria-label="Ryd søgning">&times;</button>
+            </div>
+            <select id="typeFilter" aria-label="Filtrer efter type">
+                <option value="">Alle Kategorier</option>
+            </select>
+        </div>
+        <div id="sted-list" role="list">
+            <div style="text-align:center; padding:20px; color:#666;">Henter data...</div>
+        </div>
+    </div>
+    <div id="map" aria-label="Interaktivt kort"></div>
+</div>
+
+<div id="mobile-nav" role="tablist" aria-label="Visningsvalg">
+    <button class="nav-btn active" id="btn-list" onclick="switchMobileView('list')" role="tab" aria-selected="true">
+        <span aria-hidden="true">📋</span> Liste
+    </button>
+    <button class="nav-btn" id="btn-map" onclick="switchMobileView('map')" role="tab" aria-selected="false">
+        <span aria-hidden="true">🗺️</span> Kort
+    </button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""><\/script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"><\/script>
+
+<script>
+    // Data indlejret direkte i filen (genereret af Kortbuilder) - ingen ekstern fetch nødvendig
+    const EMBEDDED_DATA = ${dataJson};
+
+    const map = L.map('map', { zoomControl: false }).setView([${cfg.centerLat}, ${cfg.centerLng}], ${cfg.zoom});
+    L.control.zoom({ position: 'topright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+    const markers = L.markerClusterGroup();
+    const stedList = document.getElementById('sted-list');
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('clearSearch');
+    const typeFilter = document.getElementById('typeFilter');
+    const searchAnnouncer = document.getElementById('search-announcer');
+
+    let allData = [];
+    let markerMap = new Map();
+
+    const LocateControl = L.Control.extend({
+        options: { position: 'topright' },
+        onAdd: function(map) {
+            const container = L.DomUtil.create('button', 'leaflet-control-locate');
+            container.innerHTML = '🎯'; container.title = "Vis min placering"; container.setAttribute('aria-label', "Vis min placering på kortet");
+            container.onclick = (e) => { e.stopPropagation(); map.locate({setView: true, maxZoom: 17}); };
+            return container;
+        }
+    });
+    map.addControl(new LocateControl());
+
+    map.on('locationfound', e => {
+        L.circleMarker(e.latlng, { radius: 8, fillColor: "#385261", color: "#fff", weight: 2, opacity: 1, fillOpacity: 0.8 }).addTo(map).bindPopup("Du er her").openPopup();
+    });
+
+    function switchMobileView(view) {
+        document.body.className = (view === 'list') ? 'view-list' : 'view-map';
+        const btnList = document.getElementById('btn-list');
+        const btnMap = document.getElementById('btn-map');
+        btnList.classList.toggle('active', view === 'list');
+        btnList.setAttribute('aria-selected', view === 'list');
+        btnMap.classList.toggle('active', view === 'map');
+        btnMap.setAttribute('aria-selected', view === 'map');
+        if (view === 'map') setTimeout(() => { map.invalidateSize(); }, 200);
+    }
+
+    allData = EMBEDDED_DATA;
+    renderMapAndList(allData);
+    populateFilters(allData);
+
+    function renderMapAndList(data) {
+        markers.clearLayers(); stedList.innerHTML = ''; markerMap.clear();
+        if(data.length === 0) {
+            stedList.innerHTML = '<div style="padding:20px; text-align:center;">Ingen lokationer fundet.</div>';
+            searchAnnouncer.textContent = 'Ingen lokationer fundet.';
+            return;
+        }
+        searchAnnouncer.textContent = \`Viser \${data.length} lokationer.\`;
+        data.forEach((sted, index) => {
+            let marker = null;
+            if (sted.lat && sted.lng) {
+                const lat = parseFloat(sted.lat), lng = parseFloat(sted.lng);
+                if (!isNaN(lat) && !isNaN(lng)) {
+                    marker = L.marker([lat, lng]).bindPopup(buildPopupContent(sted));
+                    markers.addLayer(marker); markerMap.set(index, marker);
+                }
+            }
+            const el = document.createElement('div');
+            el.className = 'sted-item';
+            el.setAttribute('role', 'button');
+            el.setAttribute('tabindex', '0');
+            el.innerHTML = \`
+                <h3>\${sted.navn}</h3>
+                <span class="adr">\${sted.adresse || 'Ingen adresse angivet'}</span>
+                <div><span class="badge badge-type">\${sted.type || 'Ukendt'}</span></div>
+            \`;
+            const activateItem = () => {
+                if (marker) {
+                    if (window.innerWidth <= 900) switchMobileView('map');
+                    markers.zoomToShowLayer(marker, () => marker.openPopup());
+                }
+            };
+            el.onclick = activateItem;
+            el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateItem(); } };
+            stedList.appendChild(el);
+        });
+        map.addLayer(markers);
+    }
+
+    function buildPopupContent(sted) {
+        return \`
+            <div class="popup-header">
+                <h2>\${sted.navn}</h2>
+                <div style="font-size:0.9rem;">\${sted.aabningstider || ''}</div>
+            </div>
+            <div class="popup-body">
+                \${sted.billed_url ? \`<img src="\${sted.billed_url}" alt="\${sted.navn}">\` : ''}
+                <p>\${sted.beskrivelse || 'Ingen beskrivelse tilgængelig.'}</p>
+                <div style="border-top:1px solid #ccc; padding-top:10px; font-size:0.9rem; color:#444;">
+                    <strong>Adresse:</strong> \${sted.adresse || 'Ikke angivet'}<br>
+                    \${sted.hjemmeside ? \`<strong>Link:</strong> <a href="\${sted.hjemmeside}" target="_blank" style="color:#0288d1; text-decoration:none; font-weight:bold;">Besøg Hjemmeside</a>\` : ''}
+                </div>
+            </div>
+        \`;
+    }
+
+    function populateFilters(data) {
+        const types = new Set(data.map(k => k.type).filter(Boolean));
+        [...types].sort().forEach(t => {
+            const opt = document.createElement('option'); opt.value = t; opt.textContent = t; typeFilter.appendChild(opt);
+        });
+    }
+
+    function filterData() {
+        const term = searchInput.value.toLowerCase(), type = typeFilter.value;
+        clearBtn.style.display = term ? 'block' : 'none';
+        const filtered = allData.filter(item => {
+            return ((item.navn||'').toLowerCase().includes(term) ||
+                    (item.adresse||'').toLowerCase().includes(term) ||
+                    (item.beskrivelse||'').toLowerCase().includes(term))
+                    && (!type || item.type === type);
+        });
+        renderMapAndList(filtered);
+    }
+
+    searchInput.addEventListener('input', filterData);
+    typeFilter.addEventListener('change', filterData);
+    clearBtn.addEventListener('click', () => { searchInput.value = ''; filterData(); searchInput.focus(); });
+<\/script>
+</body>
+</html>`;
+  }
+
+  // ---------- Autosave / draft ----------
+  function saveDraft(){
+    try{
+      const draft = {
+        data,
+        cfg: {
+          titel: document.getElementById('cfgTitel').value,
+          undertekst: document.getElementById('cfgUndertekst').value,
+          backText: document.getElementById('cfgBackText').value,
+          backUrl: document.getElementById('cfgBackUrl').value,
+          lat: document.getElementById('cfgLat').value,
+          lng: document.getElementById('cfgLng').value,
+          zoom: document.getElementById('cfgZoom').value
+        }
+      };
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    }catch(e){ /* localStorage kan fejle, fx i private browsing - ikke kritisk */ }
+  }
+
+  function loadDraft(){
+    try{
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if(!raw) return;
+      const draft = JSON.parse(raw);
+      data = Array.isArray(draft.data) ? draft.data : [];
+      if(draft.cfg){
+        document.getElementById('cfgTitel').value = draft.cfg.titel ?? document.getElementById('cfgTitel').value;
+        document.getElementById('cfgUndertekst').value = draft.cfg.undertekst ?? document.getElementById('cfgUndertekst').value;
+        document.getElementById('cfgBackText').value = draft.cfg.backText ?? document.getElementById('cfgBackText').value;
+        document.getElementById('cfgBackUrl').value = draft.cfg.backUrl ?? document.getElementById('cfgBackUrl').value;
+        document.getElementById('cfgLat').value = draft.cfg.lat ?? document.getElementById('cfgLat').value;
+        document.getElementById('cfgLng').value = draft.cfg.lng ?? document.getElementById('cfgLng').value;
+        document.getElementById('cfgZoom').value = draft.cfg.zoom ?? document.getElementById('cfgZoom').value;
+      }
+    }catch(e){ /* ignorér korrupt draft */ }
+  }
+
+  // Gem indstillinger løbende også
+  ['cfgTitel','cfgUndertekst','cfgBackText','cfgBackUrl','cfgLat','cfgLng','cfgZoom'].forEach(id=>{
+    document.getElementById(id).addEventListener('change', saveDraft);
+  });
+
+  // ---------- Init ----------
+  loadDraft();
+  renderList(); refreshPreviewMarkers(); refreshTypeList();
+  const c0 = [parseFloat(document.getElementById('cfgLat').value)||55.6265, parseFloat(document.getElementById('cfgLng').value)||12.0845];
+  map.setView(c0, parseInt(document.getElementById('cfgZoom').value,10)||16);
+
+})();
+</script>
+</body>
+</html>
