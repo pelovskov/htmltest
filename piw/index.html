@@ -1,0 +1,266 @@
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fotoalbum</title>
+<style>
+  :root{
+    --paper: #f7f4ec;
+    --paper-panel: #ffffff;
+    --ink: #2a2823;
+    --muted: #6f6a5c;
+    --line: #ddd6c4;
+    --accent: #8a6d3b;
+    --accent-ink: #ffffff;
+    --focus: #2b6cb0;
+  }
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin:0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: Verdana, Arial, "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+  a{ color: var(--accent); }
+  header.top{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 48px 24px 20px;
+  }
+  header.top h1{ font-size: 2rem; margin: 0 0 10px; font-weight: 600; }
+  header.top p{ margin: 0 0 14px; }
+  .source{
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    border-top: 1px solid var(--line);
+    padding-top: 14px;
+    margin-top: 22px !important;
+  }
+  main{ max-width: 1100px; margin: 0 auto; padding: 10px 24px 60px; }
+  .grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+  }
+  .thumb{
+    background: var(--paper-panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    display:block;
+    width: 100%;
+  }
+  .thumb img{
+    display:block;
+    width:100%;
+    height: 160px;
+    object-fit: cover;
+    background: #eee9db;
+  }
+  .thumb .cap{
+    padding: 10px 12px;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .thumb img.missing, .lightbox img.missing{ visibility: hidden; }
+  .thumb:focus-visible, .lb-btn:focus-visible{
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+  .lightbox{
+    position: fixed;
+    inset: 0;
+    background: rgba(20,18,14,0.94);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .lightbox.open{ display: flex; }
+  .lightbox figure{
+    margin:0;
+    max-width: min(90vw, 1000px);
+    max-height: 92vh;
+    display:flex;
+    flex-direction: column;
+    align-items:center;
+  }
+  .lightbox img{
+    max-width: 100%;
+    max-height: 74vh;
+    object-fit: contain;
+    border-radius: 4px;
+    background: #000;
+  }
+  .lightbox figcaption{
+    color: #f3efe4;
+    font-family: Verdana, Arial, sans-serif;
+    font-size: 0.95rem;
+    margin-top: 14px;
+    max-width: 70ch;
+    white-space: pre-line;
+    text-align: center;
+  }
+  .lightbox figcaption b{ display:block; color: #fff; font-family: Verdana, Arial, sans-serif; font-size: 1.05rem; margin-bottom: 4px; }
+  .lb-btn{
+    position: absolute;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    width: 46px; height: 46px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .lb-btn:hover{ background: rgba(255,255,255,0.22); }
+  .lb-close{ top: 18px; right: 18px; }
+  .lb-prev{ left: 18px; top: 50%; transform: translateY(-50%); }
+  .lb-next{ right: 18px; top: 50%; transform: translateY(-50%); }
+  @media (max-width: 640px){
+    header.top{ padding: 32px 18px 14px; }
+    header.top h1{ font-size: 1.5rem; }
+    .lb-prev, .lb-next{ width: 40px; height: 40px; font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1 id="albumTitleHeading"></h1>
+  <div id="albumDesc"></div>
+  <p class="source">Oprindeligt album: <a id="sourceLink" href="#" target="_blank" rel="noopener">se online</a> &middot; statisk kopi lavet <span id="exportDate"></span></p>
+</header>
+<main>
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Billedvisning">
+  <button class="lb-btn lb-close" id="lbClose" aria-label="Luk">&#10005;</button>
+  <button class="lb-btn lb-prev" id="lbPrev" aria-label="Forrige billede">&#8249;</button>
+  <button class="lb-btn lb-next" id="lbNext" aria-label="N&aelig;ste billede">&#8250;</button>
+  <figure>
+    <img id="lbImg" src="" alt="">
+    <figcaption id="lbCap"></figcaption>
+  </figure>
+</div>
+
+<script>
+var ALBUM = {"album":{"id":157,"name":"Fortidens Tåger","description":"\u003ch2>Fortidens Tåger\u003c/h2>\u003cp>Et kig tilbage på Roskilde. Gamle billeder af bygninger, steder og ting, der vækker minder hos dem, der husker byen fra tidligere tider. Ingen bestemt sammenhæng, bare et nostalgisk gensyn.\u003c/p>\u003cp>Poul Erik Løvskov\u003c/p>","source_url":"https://sfbbilleder.eu/index.php?/category/157","exported":"2026-07-20"},"images":[{"id":40,"file":"IMG_2421.jpg","title":"Brand i Roskilde Domkirke","description":"Den 26. august 1968 var der brand i i Roskilde Domkirke. Branden opstod i tagværket under en restaurering af Margretespiret.  Det oprindelige Margretespir og en klokke fra tidlig middelalder gik tabt. Heldigvis blev indersiden af kirken ikke beskadiget.","width":2560,"height":1807,"date":"2025-02-10 00:41:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210004149-ee9ef9c1-sq.jpg"},{"id":33,"file":"kaffevognen.jpg","title":"Kaffevognen på torvet","description":"Kaffevognen på torvet. Den er væk for længst. Jeg kom der sammen min far. Han fik kaffe og jeg en kakaomælk. På en god dag fik vi også basser. Kaffevognen på torver blev startet af Fællesbageriet.","width":389,"height":594,"date":"2025-02-10 00:20:03","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210002003-0603d23c-sq.jpg"},{"id":31,"file":"bøjler.jpg","title":"Beviklede bøjler","description":"Kan I huske dem? Jeg gik i en fritidsklub - Helligkorssalen - her har jeg lavet masser af disse beviklede bøjler. Alle i familien fik dem som julegaver.","width":427,"height":594,"date":"2025-02-10 00:20:02","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210002002-b900c4b7-sq.jpg"},{"id":28,"file":"IMG_2588.JPG","title":"Radiomagasinets facade","description":"Radiomagasinet, som vist også hed Fyldepennemagasinet. Her købte jeg min første LP plade. Den var med The Kinks.","width":2048,"height":1536,"date":"2025-02-10 00:19:18","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001918-2035fad2-sq.jpg"},{"id":26,"file":"IMG_2418.JPG","title":"Stokvis Musik","description":"Her har vi Pelle Stokvis med frue. Et par megt søde mennesker som havde musikforretning i Algade. De startede i Kornerups Vænge og havde på et tidspunkt også forretning i Køge. Jeg har købt mange instrumenter der. ","width":1501,"height":2048,"date":"2025-02-10 00:19:17","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001917-8e082034-sq.jpg"},{"id":24,"file":"FB_IMG_1738262849755.jpg","title":"Esso tanken ved rundkørslen","description":"Esso tanken ved rundkørslen. Der er stadig tankstation med nu hedder stationen Circel K.","width":1026,"height":540,"date":"2025-02-10 00:19:16","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001916-d266d092-sq.jpg"},{"id":25,"file":"FB_IMG_1738448401742.jpg","title":"Den Store Bastian","description":"Den store Bastian. Den bog kan jeg huske hjemme hos min Farmor og Farfar. Det må have været min onkel og min fars. Det var en gruelig historie.","width":958,"height":1340,"date":"2025-02-10 00:19:16","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001916-4d8b602b-sq.jpg"},{"id":30,"file":"IMG_2618.JPG","title":"Peters Jul","description":"Den historie har jeg hørt mange gange. Både læst op, men ikke mindst på grammofonplade, men Hanna Bjarnhof.","width":700,"height":680,"date":"2025-02-10 00:19:18","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001918-d74de140-sq.jpg"},{"id":20,"file":"FB_IMG_1731843861049~2.jpg","title":"Sparebøsse ","description":"Postkasse sparebøssen. Den var der rigtig mange der havde - jeg havde også en. Den var ikke så svær at brække op, men det var til at se bagefter.","width":344,"height":464,"date":"2025-02-10 00:19:15","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210001915-dc63977e-sq.jpg"},{"id":42,"file":"Photo713714669507_inner_161-164-639-164-161-531-665-508.jpg","title":"På ski bag ved Hedegardenes skole","description":"Hvor Gammel Landevej slutter kan man komme op på en bakke - tæt ved Hedegårdenes skole. Her er jeg sammen med fætter Ole og min farmor. Ca. 1957.","width":2787,"height":2018,"date":"2025-02-10 00:41:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210004150-6f8340ab-sq.jpg"},{"id":35,"file":"FB_IMG_1722771575371.jpg","title":"Ringparken Dyrskuepladsen og Domkirken","description":"Ringparken Dyrskuepladsen og Domkirken. Det hele set fra oven.","width":942,"height":620,"date":"2025-02-10 00:41:47","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/10/20250210004147-53e00512-sq.jpg"},{"id":3442,"file":"PXL_20241009_070915799~2.jpg","title":"Mit første orkester","description":"Her er jeg med min nye basguitar. Kan ikke huske hvad vi kaldte orkesteret, men vi var: Benny Olsen, Jens Klausen og Poul Erik Løvskov (dengang var det Sørensen).","width":4608,"height":4611,"date":"2025-02-28 16:00:06","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/28/20250228160006-a1f0aa3f-sq.jpg"},{"id":3415,"file":"IMG_1181.JPG","title":"Sunday Morning Generation 1967","description":"Sunday Morning Generation var det band jeg var med i nogle år. Her er vi ved en konkurrence på Slagteriskolen i 1967. Vi har: Hans Jørgen, Michael, Jan, Claus og Poul Erik.","width":604,"height":385,"date":"2025-02-28 15:50:52","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/28/20250228155052-42bb5ac0-sq.jpg"},{"id":3316,"file":"dyrskuepladsen.png","title":"Dyrskuepladsen","description":"Dyrskuepladsen 1978 fra oven","width":1414,"height":1226,"date":"2025-02-22 18:06:23","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/02/22/20250222180623-872bf6b6-sq.png"},{"id":3592,"file":"Luftbro-over-banen-1024x678.jpg","title":"Luftbroen over banen","description":"Luftbroen over banen","width":1024,"height":678,"date":"2025-03-15 18:32:43","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/03/15/20250315183243-517be67e-sq.jpg"},{"id":3940,"file":"1000001987.jpg","title":"En herlig pølsevogn/grillbar","description":"Et herligt sted. Mere end en pølsevogn. Der var fiskefilet og roterende grillkyllinger på menuen også.","width":888,"height":672,"date":"2025-06-09 16:52:05","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/06/09/20250609165205-69882855-sq.jpg"},{"id":4123,"file":"faxe.jpeg","title":"Faxe Koral","description":"Faxe Koral - en herlig sodavand. Dem har jeg drukket mange af.","width":806,"height":1008,"date":"2025-07-26 08:48:20","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/26/20250726084820-9e040233-sq.jpg"},{"id":4124,"file":"BS Astersvej, Personalefoto.t5808ad64.m600.xpvT9TlwQBq3RuWPc.jpg","title":"BS Astersvej, Personalefoto","description":"BS Astersvej, Personalefoto","width":600,"height":412,"date":"2025-07-28 15:15:10","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/28/20250728151510-a78fde17-sq.jpg"},{"id":4125,"file":"FB_IMG_1753693701990.jpg","title":"FB IMG 1753693701990","description":"","width":1284,"height":1284,"date":"2025-07-30 11:54:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115449-346767f1-sq.jpg"},{"id":4126,"file":"IMG_0064.jpg","title":"IMG 0064","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115449-285c1e47-sq.jpg"},{"id":4127,"file":"IMG_0065.jpg","title":"IMG 0065","description":"","width":946,"height":2048,"date":"2025-07-30 11:54:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115449-787ff2b0-sq.jpg"},{"id":4128,"file":"IMG_0077.JPG","title":"IMG 0077","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115449-a8392fef-sq.jpg"},{"id":4129,"file":"IMG_0078.JPG","title":"IMG 0078","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:49","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115449-98962ad9-sq.jpg"},{"id":4130,"file":"IMG_0079.JPG","title":"IMG 0079","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115450-767ed96b-sq.jpg"},{"id":4131,"file":"IMG_0080.JPG","title":"IMG 0080","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115450-fb0e2dc4-sq.jpg"},{"id":4132,"file":"IMG_0081.JPG","title":"IMG 0081","description":"","width":636,"height":1080,"date":"2025-07-30 11:54:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115450-451b0cc1-sq.jpg"},{"id":4133,"file":"IMG_0082.JPG","title":"IMG 0082","description":"","width":1920,"height":1080,"date":"2025-07-30 11:54:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115450-2362ad8f-sq.jpg"},{"id":4134,"file":"IMG_0083.JPG","title":"IMG 0083","description":"","width":838,"height":1080,"date":"2025-07-30 11:54:50","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/07/30/20250730115450-a623dc84-sq.jpg"},{"id":4324,"file":"Musik.jpg","title":"Musikhuset i Karen Olsdatters Stræde","description":"Musikhuset i Karen Olsdatters Stræde","width":526,"height":526,"date":"2025-08-28 14:41:23","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/08/28/20250828144123-076e165a-sq.jpg"},{"id":4325,"file":"Musik 2.jpg","title":"Musik 2","description":"","width":720,"height":540,"date":"2025-08-28 14:41:23","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/08/28/20250828144123-bfb48df9-sq.jpg"},{"id":4326,"file":"Musik 1916 09 maj Ro Dagblad.jpg","title":"Musik 1916 09 maj Ro Dagblad","description":"","width":456,"height":282,"date":"2025-08-28 14:41:23","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/08/28/20250828144123-94bdd0b6-sq.jpg"},{"id":4327,"file":"RoskildeMinibyKort.png","title":"RoskildeMinibyKort","description":"","width":627,"height":817,"date":"2025-08-29 16:24:17","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/08/29/20250829162417-27849679-sq.png"},{"id":4354,"file":"Slide15_geotagged.JPG","title":"Slide15 geotagged","description":"","width":1280,"height":720,"date":"2025-09-11 17:02:33","thumb_url":"https://sfbbilleder.eu/_data/i/upload/2025/09/11/20250911170233-b4e414b2-sq.jpg"}]};
+var FOLDER = "billeder";
+
+document.title = ALBUM.album.name || 'Fotoalbum';
+document.getElementById('albumTitleHeading').textContent = ALBUM.album.name || '';
+document.getElementById('albumDesc').innerHTML = ALBUM.album.description || '';
+document.getElementById('sourceLink').href = ALBUM.album.source_url || '#';
+document.getElementById('exportDate').textContent = ALBUM.album.exported || '';
+
+var grid = document.getElementById('grid');
+var lightbox = document.getElementById('lightbox');
+var lbImg = document.getElementById('lbImg');
+var lbCap = document.getElementById('lbCap');
+var currentIndex = 0;
+var lastFocused = null;
+
+// Piwigos batch-downloader omdøber filer til: {id}_{oprindeligt filnavn uden filtype}_{bredde}x{højde}.jpg
+// Vi prøver det navn først, og falder tilbage til det oprindelige filnavn fra album.json hvis det fejler.
+function candidateFilenames(img){
+  var stem = img.file.replace(/\.[^/.]+$/, '');
+  var candidates = [];
+  if(img.width && img.height){
+    candidates.push(img.id + '_' + stem + '_' + img.width + 'x' + img.height + '.jpg');
+  }
+  candidates.push(img.file);
+  return candidates;
+}
+
+function loadWithFallback(el, img){
+  var candidates = candidateFilenames(img);
+  var i = 0;
+  function tryNext(){
+    if(i >= candidates.length){ el.onerror = null; el.classList.add('missing'); return; }
+    el.src = FOLDER + '/' + encodeURIComponent(candidates[i]);
+    i++;
+  }
+  el.onerror = tryNext;
+  tryNext();
+}
+
+ALBUM.images.forEach(function(img, i){
+  var btn = document.createElement('button');
+  btn.className = 'thumb';
+  btn.setAttribute('aria-label', 'Vis billede: ' + (img.title || img.file));
+  var picture = document.createElement('img');
+  loadWithFallback(picture, img);
+  picture.alt = '';
+  picture.loading = 'lazy';
+  var cap = document.createElement('div');
+  cap.className = 'cap';
+  cap.textContent = img.title || img.file;
+  btn.appendChild(picture);
+  btn.appendChild(cap);
+  btn.addEventListener('click', function(){ openLightbox(i, btn); });
+  grid.appendChild(btn);
+});
+
+function openLightbox(i, triggerEl){
+  currentIndex = i;
+  lastFocused = triggerEl || document.activeElement;
+  showImage(i);
+  lightbox.classList.add('open');
+  lightbox.setAttribute('aria-hidden', 'false');
+  document.getElementById('lbClose').focus();
+  document.addEventListener('keydown', onKeydown);
+}
+
+function closeLightbox(){
+  lightbox.classList.remove('open');
+  lightbox.setAttribute('aria-hidden', 'true');
+  document.removeEventListener('keydown', onKeydown);
+  if(lastFocused && lastFocused.focus) lastFocused.focus();
+}
+
+function showImage(i){
+  var n = ALBUM.images.length;
+  currentIndex = (i + n) % n;
+  var img = ALBUM.images[currentIndex];
+  lbImg.classList.remove('missing');
+  loadWithFallback(lbImg, img);
+  lbImg.alt = img.title || img.file;
+  var capHtml = '';
+  if(img.title) capHtml += '<b>' + escapeHtml(img.title) + '</b>';
+  if(img.description) capHtml += escapeHtml(img.description);
+  lbCap.innerHTML = capHtml;
+}
+
+function escapeHtml(s){
+  return (s || '').replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function onKeydown(e){
+  if(e.key === 'Escape') closeLightbox();
+  else if(e.key === 'ArrowRight') showImage(currentIndex + 1);
+  else if(e.key === 'ArrowLeft') showImage(currentIndex - 1);
+}
+
+document.getElementById('lbClose').addEventListener('click', closeLightbox);
+document.getElementById('lbNext').addEventListener('click', function(){ showImage(currentIndex + 1); });
+document.getElementById('lbPrev').addEventListener('click', function(){ showImage(currentIndex - 1); });
+lightbox.addEventListener('click', function(e){ if(e.target === lightbox) closeLightbox(); });
+</script>
+</body>
+</html>
