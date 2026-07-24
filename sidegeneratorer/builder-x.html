@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Sidebygger</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio"></script>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        /* Simpel styling for en pænere scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #4a5568; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        body { font-family: 'Inter', sans-serif; }
+        /* Styling for den genererede sides indhold */
+        .preview-content h1, .preview-content h2, .preview-content h3 { margin-bottom: 0.5rem; font-weight: 600; }
+        .preview-content h1 { font-size: 2rem; }
+        .preview-content h2 { font-size: 1.5rem; }
+        .preview-content h3 { font-size: 1.25rem; }
+        .preview-content p { margin-bottom: 1rem; }
+        .preview-content a { color: #63b3ed; text-decoration: underline; }
+        .preview-content ul, .preview-content ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style: revert; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+
+    <div class="container mx-auto p-4 lg:p-8">
+
+        <!-- Header for byggeren -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 dark:text-white">HTML Sidebygger</h1>
+            <p class="text-lg text-gray-600 dark:text-gray-400 mt-2">Byg din side til venstre, se resultatet til højre, og gem en ren HTML-fil.</p>
+        </header>
+
+        <!-- Hovedlayout med editor og preview -->
+        <main class="flex flex-col lg:flex-row gap-8">
+
+            <!-- Venstre kolonne: Editor -->
+            <div id="editor" class="w-full lg:w-1/2 bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                <h2 class="text-2xl font-semibold mb-6 border-b border-gray-300 dark:border-gray-600 pb-3">Editor</h2>
+
+                <!-- Hovedtitel og undertitel -->
+                <div class="space-y-4 mb-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div>
+                        <label for="main-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Hovedtitel</label>
+                        <input type="text" id="main-title" class="mt-1 block w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Indtast sidens titel her...">
+                    </div>
+                    <div>
+                        <label for="main-subtitle" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Undertitel</label>
+                        <input type="text" id="main-subtitle" class="mt-1 block w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Indtast en kort beskrivelse...">
+                    </div>
+                </div>
+
+                <!-- Dynamisk sektion for indholdsruder -->
+                <div id="panes-container" class="space-y-6">
+                    <!-- Indholdsruder bliver indsat her af JavaScript -->
+                </div>
+
+                <!-- Knapper -->
+                <div class="mt-8 space-y-4">
+                    <button id="add-pane-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                        Tilføj ny rude
+                    </button>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="import-html-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                            Importer og Rediger
+                        </button>
+                        <button id="generate-html-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                            Gem Færdig Side
+                        </button>
+                    </div>
+                    <input type="file" id="file-importer" accept=".html" class="hidden">
+                </div>
+            </div>
+
+            <!-- Højre kolonne: Preview -->
+            <div class="w-full lg:w-1/2">
+                <div class="sticky top-8">
+                     <h2 class="text-2xl font-semibold mb-6 border-b border-gray-300 dark:border-gray-600 pb-3">Live Preview</h2>
+                    <div id="preview" class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg h-[70vh] overflow-y-auto">
+                        <!-- Preview-indhold bliver indsat her -->
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Skjult skabelon for en indholdsrude i editoren -->
+    <template id="pane-template">
+        <div class="pane-editor border border-gray-200 dark:border-gray-700 p-4 rounded-lg relative bg-gray-50 dark:bg-gray-700/50">
+            <button class="delete-pane-btn absolute top-2 right-2 text-gray-400 hover:text-red-500 dark:hover:text-red-400 font-bold text-xl" title="Slet rude">&times;</button>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium">Titel</label>
+                    <input type="text" class="pane-title mt-1 block w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm py-2 px-3" placeholder="Rudens titel">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Brødtekst (Markdown understøttet)</label>
+                    <textarea class="pane-body mt-1 block w-full h-32 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm py-2 px-3" placeholder="Skriv din tekst her. F.eks.:&#10;### Min Overskrift&#10;- Punkt 1&#10;- Punkt 2"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium">Medie URL (Billede, Lyd eller YouTube)</label>
+                    <input type="url" class="pane-media-url mt-1 block w-full bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm py-2 px-3" placeholder="https://eksempel.com/billede.jpg">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        let pageData = {
+            mainTitle: "Velkommen til min side",
+            mainSubtitle: "Denne side er bygget med den simple HTML Sidebygger.",
+            panes: [{
+                id: `pane-${Date.now()}`,
+                title: "Første indlæg",
+                body: "### Velkommen til Markdown\nDette er et eksempel på en rude. Du kan formatere teksten med **Markdown**.\n\n* Punkt 1\n* Punkt 2\n\nPrøv selv at tilføje flere punkter eller en `### Lille overskrift`.",
+                mediaUrl: "https://placehold.co/600x400/7c3aed/ffffff?text=Indsæt+Billede"
+            }]
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // RETTELSE: Konfigurer marked.js til at være mere robust
+            if (typeof marked !== 'undefined') {
+                marked.setOptions({
+                    breaks: true, // Konverterer enkelt linjeskift til <br>
+                    gfm: true     // Aktiverer GitHub Flavored Markdown for bedre kompatibilitet
+                });
+            }
+
+            const editor = document.getElementById('editor');
+            const preview = document.getElementById('preview');
+            const mainTitleInput = document.getElementById('main-title');
+            const mainSubtitleInput = document.getElementById('main-subtitle');
+            const panesContainer = document.getElementById('panes-container');
+            const generateHtmlBtn = document.getElementById('generate-html-btn');
+            const importHtmlBtn = document.getElementById('import-html-btn');
+            const fileImporter = document.getElementById('file-importer');
+            const paneTemplate = document.getElementById('pane-template');
+
+            const renderPreview = () => {
+                preview.innerHTML = `
+                    <div class="max-w-4xl mx-auto">
+                        <header class="text-center my-8 md:my-12 p-6 bg-gray-100 dark:bg-gray-700 rounded-xl shadow-inner">
+                            <h1 class="text-3xl md:text-5xl font-extrabold text-gray-900 dark:text-white">${pageData.mainTitle}</h1>
+                            <p class="mt-4 text-lg md:text-xl text-gray-600 dark:text-gray-300">${pageData.mainSubtitle}</p>
+                        </header>
+                        <div id="panes-preview-container" class="space-y-8">
+                            ${pageData.panes.map(renderPanePreview).join('')}
+                        </div>
+                    </div>`;
+            };
+
+            const renderPanePreview = (pane) => {
+                const mediaHtml = getMediaHtml(pane.mediaUrl);
+                const bodyHtml = (typeof marked !== 'undefined')
+                    ? marked.parse(pane.body || '')
+                    : pane.body.replace(/\n/g, '<br>');
+
+                return `
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden transition-all duration-300">
+                        ${mediaHtml}
+                        <div class="p-6 md:p-8 preview-content">
+                            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">${pane.title}</h2>
+                            <div class="prose dark:prose-invert max-w-none">${bodyHtml}</div>
+                        </div>
+                    </div>`;
+            };
+
+            const getMediaHtml = (url) => {
+                if (!url) return '';
+                const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+                const youtubeMatch = url.match(youtubeRegex);
+                if (youtubeMatch && youtubeMatch[1]) {
+                    return `<div class="aspect-w-16 aspect-h-9"><iframe src="https://www.youtube.com/embed/${youtubeMatch[1]}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-full"></iframe></div>`;
+                }
+                if (/\.(jpeg|jpg|gif|png|svg|webp)$/i.test(url)) {
+                    return `<img src="${url}" alt="Medieindhold" class="w-full h-auto object-cover" onerror="this.style.display='none'">`;
+                }
+                if (/\.(mp3|wav|ogg)$/i.test(url)) {
+                    return `<div class="p-4"><audio controls class="w-full"><source src="${url}" type="audio/mpeg">Din browser understøtter ikke lyd-elementet.</audio></div>`;
+                }
+                return '<p class="p-4 text-red-500">Ukendt eller ikke-understøttet medie-URL.</p>';
+            };
+
+            const renderEditor = () => {
+                mainTitleInput.value = pageData.mainTitle;
+                mainSubtitleInput.value = pageData.mainSubtitle;
+                panesContainer.innerHTML = '';
+                pageData.panes.forEach(pane => {
+                    const paneElement = document.importNode(paneTemplate.content, true).firstElementChild;
+                    paneElement.dataset.id = pane.id;
+                    paneElement.querySelector('.pane-title').value = pane.title;
+                    paneElement.querySelector('.pane-body').value = pane.body;
+                    paneElement.querySelector('.pane-media-url').value = pane.mediaUrl;
+                    panesContainer.appendChild(paneElement);
+                });
+            };
+
+            const updateAndRender = () => {
+                pageData.mainTitle = mainTitleInput.value;
+                pageData.mainSubtitle = mainSubtitleInput.value;
+                const paneElements = panesContainer.querySelectorAll('.pane-editor');
+                const newPanesData = [];
+                paneElements.forEach(el => {
+                    newPanesData.push({
+                        id: el.dataset.id,
+                        title: el.querySelector('.pane-title').value,
+                        body: el.querySelector('.pane-body').value,
+                        mediaUrl: el.querySelector('.pane-media-url').value
+                    });
+                });
+                pageData.panes = newPanesData;
+                renderPreview();
+            };
+
+            editor.addEventListener('click', (e) => {
+                if (e.target.closest('#add-pane-btn')) {
+                    pageData.panes.push({ id: `pane-${Date.now()}`, title: 'Ny rude', body: '', mediaUrl: '' });
+                    renderEditor();
+                    updateAndRender();
+                }
+                if (e.target.classList.contains('delete-pane-btn')) {
+                    const paneElement = e.target.closest('.pane-editor');
+                    if (paneElement) {
+                        const paneId = paneElement.dataset.id;
+                        pageData.panes = pageData.panes.filter(p => p.id !== paneId);
+                        renderEditor();
+                        updateAndRender();
+                    }
+                }
+            });
+
+            editor.addEventListener('input', updateAndRender);
+
+            const generateCleanHtmlString = () => {
+                const dataJson = JSON.stringify(pageData, null, 2);
+                const previewHtml = preview.innerHTML;
+                return `<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${pageData.mainTitle}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .preview-content h1, .preview-content h2, .preview-content h3 { margin-bottom: 0.5rem; font-weight: 600; }
+        .preview-content h1 { font-size: 2rem; }
+        .preview-content h2 { font-size: 1.5rem; }
+        .preview-content h3 { font-size: 1.25rem; }
+        .preview-content p { margin-bottom: 1rem; }
+        .preview-content a { color: #63b3ed; text-decoration: underline; }
+        .preview-content ul, .preview-content ol { margin-left: 1.5rem; margin-bottom: 1rem; list-style: revert; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="container mx-auto p-4 lg:p-8">
+        ${previewHtml}
+    </div>
+    <script type="application/json" id="pageDataJson">${dataJson}<\/script>
+</body>
+</html>`;
+            };
+
+            generateHtmlBtn.addEventListener('click', () => {
+                const cleanHtml = generateCleanHtmlString();
+                const blob = new Blob([cleanHtml], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'min-side.html';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            });
+
+            importHtmlBtn.addEventListener('click', () => fileImporter.click());
+            fileImporter.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const fileContent = e.target.result;
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(fileContent, 'text/html');
+                    const dataScript = doc.getElementById('pageDataJson');
+                    if (dataScript && dataScript.textContent) {
+                        try {
+                            pageData = JSON.parse(dataScript.textContent);
+                            renderEditor();
+                            updateAndRender();
+                            importHtmlBtn.textContent = 'Importeret!';
+                            setTimeout(() => { importHtmlBtn.textContent = 'Importer og Rediger'; }, 2000);
+                        } catch (err) {
+                            alert('Fejl: Kunne ikke indlæse data.');
+                        }
+                    } else {
+                        alert('Fejl: Ingen redigerbare data fundet i denne HTML-fil.');
+                    }
+                };
+                reader.readAsText(file);
+                fileImporter.value = '';
+            });
+
+            // Initial render
+            renderEditor();
+            renderPreview();
+        });
+    </script>
+</body>
+</html>
+

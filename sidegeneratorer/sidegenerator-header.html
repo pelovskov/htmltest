@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lokalhistorisk HTML Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #e2e8f0; }
+        input[type="radio"]:checked { box-shadow: 0 0 0 2px currentColor; }
+        #preview::-webkit-scrollbar { width: 8px; }
+        #preview::-webkit-scrollbar-track { background: #f1f5f9; }
+        #preview::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 20px; border: 3px solid #f1f5f9; }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateY(-20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
+        .notification { animation: fadeInOut 4s ease-in-out forwards; }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <div id="notification-area" class="fixed top-5 right-5 z-50"></div>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-slate-900">Lokalhistorisk HTML Generator</h1>
+            <p class="text-lg text-slate-600 mt-2">Udfyld felterne, upload en eksisterende fil, og generer din interaktive side.</p>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- FORMULAR SEKTION -->
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <form id="generator-form">
+
+                    <!-- Grundlæggende Indstillinger -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Grundlæggende</legend>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="pageTitle" class="block text-sm font-medium text-slate-700 mb-1">Sidens Titel</label>
+                                <input type="text" id="pageTitle" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Eks: Bakkesvinget i Roskilde" required>
+                            </div>
+                            <div>
+                                <label for="pageDescription" class="block text-sm font-medium text-slate-700 mb-1">Kort Beskrivelse / Undertitel</label>
+                                <input type="text" id="pageDescription" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Eks: En gade med dobbeltidentitet">
+                            </div>
+                            <div>
+                                <label for="overviewUrl" class="block text-sm font-medium text-slate-700 mb-1">URL til Oversigtsside (Valgfri)</label>
+                                <input type="url" id="overviewUrl" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="https://eksempel.dk/oversigt.html">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-2">Vælg Farvetema</label>
+                                <div class="flex items-center space-x-6">
+                                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="theme" value="#b30249" class="h-5 w-5 appearance-none rounded-full border-2 border-slate-300 checked:bg-[#b30249] checked:border-transparent" checked><span>Rød</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="theme" value="#596034" class="h-5 w-5 appearance-none rounded-full border-2 border-slate-300 checked:bg-[#596034] checked:border-transparent"><span>Grøn</span></label>
+                                    <label class="flex items-center space-x-2 cursor-pointer"><input type="radio" name="theme" value="#545454" class="h-5 w-5 appearance-none rounded-full border-2 border-slate-300 checked:bg-[#545454] checked:border-transparent"><span>Grå</span></label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- NYT START: Sektion for den valgfrie info-modal -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Ekstra Info i Header (Valgfri)</legend>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="modalButtonText" class="block text-sm font-medium text-slate-700 mb-1">Tekst på Knap</label>
+                                <input type="text" id="modalButtonText" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Eks: Om Projektet">
+                            </div>
+                            <div>
+                                <label for="modalContentText" class="block text-sm font-medium text-slate-700 mb-1">Indhold i Modal (Brug Markdown)</label>
+                                <textarea id="modalContentText" rows="6" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Skriv den tekst, der skal vises, når man klikker på knappen..."></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <!-- NYT SLUT -->
+
+                    <!-- Lydfil -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Lydfil (Valgfri)</legend>
+                        <div class="space-y-4">
+                            <div><label for="audioTitle" class="block text-sm font-medium text-slate-700 mb-1">Titel på Lydklip</label><input type="text" id="audioTitle" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Eks: Interview med en beboer"></div>
+                            <div><label for="audioUrl" class="block text-sm font-medium text-slate-700 mb-1">URL til MP3-fil</label><input type="url" id="audioUrl" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="https://eksempel.dk/lyd.mp3"></div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Indledende Billeder -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Indledende Billeder (Valgfri)</legend>
+                         <div class="space-y-4">
+                            <div class="p-3 border rounded-md bg-white space-y-2">
+                                <label for="imageUrl1" class="block text-sm font-medium text-slate-700">URL til Billede 1</label><input type="url" id="imageUrl1" class="w-full p-2 border border-slate-300 rounded-md" placeholder="https://eksempel.dk/billede1.jpg">
+                                <label for="imageCaption1" class="block text-sm font-medium text-slate-700">Billedtekst til Billede 1 (Valgfri)</label><input type="text" id="imageCaption1" class="w-full p-2 border border-slate-300 rounded-md" placeholder="Kort beskrivelse der vises under billedet">
+                                <label for="imageAlt1" class="block text-sm font-medium text-slate-700">Alt-tekst til Billede 1</label><input type="text" id="imageAlt1" class="w-full p-2 border border-slate-300 rounded-md" placeholder="Vigtig for skærmlæsere">
+                            </div>
+                             <div class="p-3 border rounded-md bg-white space-y-2">
+                                <label for="imageUrl2" class="block text-sm font-medium text-slate-700">URL til Billede 2</label><input type="url" id="imageUrl2" class="w-full p-2 border border-slate-300 rounded-md" placeholder="https://eksempel.dk/billede2.jpg">
+                                <label for="imageCaption2" class="block text-sm font-medium text-slate-700">Billedtekst til Billede 2 (Valgfri)</label><input type="text" id="imageCaption2" class="w-full p-2 border border-slate-300 rounded-md" placeholder="Kort beskrivelse der vises under billedet">
+                                <label for="imageAlt2" class="block text-sm font-medium text-slate-700">Alt-tekst til Billede 2</label><input type="text" id="imageAlt2" class="w-full p-2 border border-slate-300 rounded-md" placeholder="Vigtig for skærmlæsere">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Artikeltekst -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Artikeltekst</legend>
+                        <div><label for="articleText" class="block text-sm font-medium text-slate-700 mb-1">Indsæt din tekst her med Markdown formatering</label><textarea id="articleText" rows="18" class="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500" placeholder="Brug Markdown til at formatere din tekst..."></textarea></div>
+                    </fieldset>
+
+                    <!-- Billedgalleri -->
+                    <fieldset class="mb-6 border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">Billedgalleri (Valgfri)</legend>
+                        <div id="gallery-inputs" class="space-y-4"></div>
+                        <button type="button" id="add-gallery-image" class="mt-4 text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition duration-300">Tilføj Billede til Galleri</button>
+                    </fieldset>
+
+                    <!-- CTA Knapper -->
+                     <fieldset class="border border-slate-200 p-4 rounded-md bg-slate-50">
+                        <legend class="text-xl font-semibold px-2">CTA Knapper (Valgfri)</legend>
+                        <div id="cta-inputs" class="space-y-4"></div>
+                        <button type="button" id="add-cta-button" class="mt-4 text-sm bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2 px-4 rounded-lg transition duration-300">Tilføj Knap</button>
+                    </fieldset>
+                </form>
+            </div>
+
+            <!-- PREVIEW OG KONTROL SEKTION -->
+            <div class="sticky top-8">
+                <div class="bg-white p-4 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-slate-900">Forhåndsvisning og Kontrol</h2>
+                    <div class="border-4 border-slate-300 rounded-lg overflow-hidden bg-white"><iframe id="preview" class="w-full h-[60vh] md:h-[75vh]" title="Live preview af den genererede side"></iframe></div>
+                    <div class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                         <button id="uploadBtn" class="w-full text-white bg-indigo-600 hover:bg-indigo-700 font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md">Upload og Rediger</button>
+                         <a id="downloadLink" class="w-full text-center text-white bg-emerald-600 hover:bg-emerald-700 font-bold py-3 px-6 rounded-lg transition duration-300 shadow-md" style="display: none;">Download HTML Fil</a>
+                    </div>
+                    <input type="file" id="htmlUploader" accept=".html" class="hidden">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const form = document.getElementById('generator-form');
+            const previewFrame = document.getElementById('preview');
+            const downloadLink = document.getElementById('downloadLink');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const htmlUploader = document.getElementById('htmlUploader');
+            const addGalleryBtn = document.getElementById('add-gallery-image');
+            const galleryInputsContainer = document.getElementById('gallery-inputs');
+            const addCtaBtn = document.getElementById('add-cta-button');
+            const ctaInputsContainer = document.getElementById('cta-inputs');
+
+            let galleryImageCount = 0;
+            let ctaCount = 0;
+
+            function addGalleryInput(url = '', caption = '', alt = '', description = '') {
+                galleryImageCount++;
+                const div = document.createElement('div');
+                div.className = 'p-3 border rounded-md bg-white space-y-2';
+                div.innerHTML = `
+                    <label class="text-sm font-medium">Galleri Billede ${galleryImageCount}</label>
+                    <input type="url" value="${url}" class="gallery-url w-full p-2 border border-slate-300 rounded-md" placeholder="URL til billede">
+                    <input type="text" value="${caption}" class="gallery-caption w-full p-2 border border-slate-300 rounded-md" placeholder="Billedtekst / Overskrift i modal">
+                    <textarea class="gallery-description w-full p-2 border border-slate-300 rounded-md" rows="2" placeholder="Uddybende Beskrivelse (valgfri)">${description}</textarea>
+                    <input type="text" value="${alt}" class="gallery-alt w-full p-2 border border-slate-300 rounded-md" placeholder="Alt-tekst (til skærmlæsere)">
+                `;
+                galleryInputsContainer.appendChild(div);
+            }
+
+            function addCtaInput(text = '', url = '') {
+                ctaCount++;
+                const div = document.createElement('div');
+                div.className = 'p-3 border rounded-md bg-white space-y-2';
+                div.innerHTML = `
+                    <label class="text-sm font-medium">Knap ${ctaCount}</label>
+                    <input type="text" value="${text}" class="cta-text w-full p-2 border border-slate-300 rounded-md" placeholder="Eks: Se flere billeder">
+                    <input type="url" value="${url}" class="cta-url w-full p-2 border border-slate-300 rounded-md" placeholder="https://link.til.knap">
+                `;
+                ctaInputsContainer.appendChild(div);
+            }
+
+            addGalleryBtn.addEventListener('click', () => addGalleryInput());
+            addCtaBtn.addEventListener('click', () => addCtaInput());
+
+            function convertMarkdown(md) {
+                let html = md;
+                html = html.replace(/^## (.*$)/gim, (match, content) => {
+                    const id = content.toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'oe').replace(/å/g, 'aa').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                    return `<h2 id="${id}" class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-6 border-l-4 border-THEME_COLOR pl-4 scroll-mt-24">${content}</h2>`;
+                });
+                html = html.replace(/^### (.*$)/gim, '<h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mt-8 mb-3">$1</h3>');
+                html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-THEME_COLOR hover:underline" target="_blank" rel="noopener noreferrer">$1</a>');
+                html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+                html = html.replace(/<\/li>\n<li>/gim, '</li><li>');
+                html = html.replace(/(<li>.*<\/li>)/gs, '<ul class="list-disc list-inside space-y-2 my-4">$1</ul>');
+                html = html.split(/\n\s*\n/).map(p => {
+                    if (p.startsWith('<h') || p.startsWith('<ul')) return p;
+                    return p ? `<p class="mb-4">${p.replace(/\n/g, '<br>')}</p>` : '';
+                }).join('');
+                return html;
+            }
+
+            function generateHtml() {
+                const data = {
+                    pageTitle: document.getElementById('pageTitle').value,
+                    pageDescription: document.getElementById('pageDescription').value,
+                    overviewUrl: document.getElementById('overviewUrl').value,
+                    themeColor: document.querySelector('input[name="theme"]:checked').value,
+                    // NYT START: Indsaml data fra de nye felter
+                    modalButtonText: document.getElementById('modalButtonText').value,
+                    modalContentText: document.getElementById('modalContentText').value,
+                    // NYT SLUT
+                    audioTitle: document.getElementById('audioTitle').value,
+                    audioUrl: document.getElementById('audioUrl').value,
+                    imageUrl1: document.getElementById('imageUrl1').value,
+                    imageCaption1: document.getElementById('imageCaption1').value,
+                    imageAlt1: document.getElementById('imageAlt1').value,
+                    imageUrl2: document.getElementById('imageUrl2').value,
+                    imageCaption2: document.getElementById('imageCaption2').value,
+                    imageAlt2: document.getElementById('imageAlt2').value,
+                    articleText: document.getElementById('articleText').value,
+                    galleryImages: [],
+                    ctas: []
+                };
+
+                const galleryUrlInputs = document.querySelectorAll('.gallery-url');
+                const galleryCaptionInputs = document.querySelectorAll('.gallery-caption');
+                const galleryAltInputs = document.querySelectorAll('.gallery-alt');
+                const galleryDescriptionInputs = document.querySelectorAll('.gallery-description');
+                galleryUrlInputs.forEach((urlInput, index) => {
+                    if (urlInput.value) {
+                        data.galleryImages.push({
+                            url: urlInput.value,
+                            caption: galleryCaptionInputs[index].value,
+                            alt: galleryAltInputs[index].value || galleryCaptionInputs[index].value || 'Galleri billede',
+                            description: galleryDescriptionInputs[index].value
+                        });
+                    }
+                });
+
+                const ctaTextInputs = document.querySelectorAll('.cta-text');
+                const ctaUrlInputs = document.querySelectorAll('.cta-url');
+                ctaTextInputs.forEach((textInput, index) => {
+                    const urlInput = ctaUrlInputs[index];
+                    if (textInput.value && urlInput.value) {
+                        data.ctas.push({ text: textInput.value, url: urlInput.value });
+                    }
+                });
+
+                const menuItems = (data.articleText.match(/^## (.*$)/gim) || []).map(item => {
+                    const title = item.substring(3);
+                    const href = title.toLowerCase().replace(/æ/g, 'ae').replace(/ø/g, 'oe').replace(/å/g, 'aa').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                    return `<a href="#${href}" class="block text-lg hover:bg-white/20 p-3 rounded-md transition duration-300">${title}</a>`;
+                });
+                if (data.galleryImages.length > 0) {
+                    menuItems.push(`<a href="#galleri" class="block text-lg hover:bg-white/20 p-3 rounded-md transition duration-300">Galleri</a>`);
+                }
+                const finalMenuItems = menuItems.join('');
+
+                let finalArticleHtml = convertMarkdown(data.articleText).replace(/THEME_COLOR/g, data.themeColor);
+
+                const audioSection = data.audioUrl ? `<section id="lydklip" class="my-12"><h3 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">${data.audioTitle || 'Lydklip'}</h3><div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md"><audio controls class="w-full"><source src="${data.audioUrl}" type="audio/mpeg">Din browser understøtter ikke lydelementet.</audio></div></section>` : '';
+
+                const image1Html = data.imageUrl1 ? `<figure><img src="${data.imageUrl1}" alt="${data.imageAlt1 || 'Indledende billede 1'}" class="w-full h-auto object-cover rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/334155?text=Billede+fejl';">${data.imageCaption1 ? `<figcaption class="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">${data.imageCaption1}</figcaption>` : ''}</figure>` : '';
+                const image2Html = data.imageUrl2 ? `<figure><img src="${data.imageUrl2}" alt="${data.imageAlt2 || 'Indledende billede 2'}" class="w-full h-auto object-cover rounded-lg shadow-lg border-2 border-gray-200 dark:border-gray-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/e2e8f0/334155?text=Billede+fejl';">${data.imageCaption2 ? `<figcaption class="mt-2 text-sm text-center text-gray-600 dark:text-gray-400">${data.imageCaption2}</figcaption>` : ''}</figure>` : '';
+                const topImagesSection = (image1Html || image2Html) ? `<div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-8">${image1Html}${image2Html}</div>` : '';
+
+                const gallerySection = data.galleryImages.length > 0 ? `<section id="galleri" class="mb-12 scroll-mt-24"><h2 class="text-3xl md:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-8 text-center">Galleri</h2><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">${data.galleryImages.map(img => `<div class="gallery-item cursor-pointer group" data-src="${img.url}" data-caption="${img.caption}" data-alt="${img.alt}" data-description="${img.description}"><figure class="p-2 border-2 border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 shadow-lg group-hover:shadow-xl transition-shadow duration-300 flex flex-col h-full"><img src="${img.url}" alt="${img.alt}" class="w-full h-auto object-cover rounded-md flex-grow" onerror="this.onerror=null;this.src='https://placehold.co/400x300/e2e8f0/334155?text=Billede+fejl';">${img.caption ? `<figcaption class="mt-2 text-sm text-center text-gray-600 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700">${img.caption}</figcaption>` : ''}</figure></div>`).join('')}</div></section>` : '';
+                const ctaSection = data.ctas.length > 0 ? `<section class="text-center my-16 flex flex-wrap justify-center gap-4">${data.ctas.map(cta => `<a href="${cta.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-[${data.themeColor}] text-white font-bold text-lg px-8 py-4 rounded-lg shadow-md hover:opacity-80 hover:shadow-lg transform hover:-translate-y-1 transition-all duration-300">${cta.text}</a>`).join('')}</section>` : '';
+                const homeIconHtml = data.overviewUrl ? `<a href="${data.overviewUrl}" title="Tilbage til oversigt" class="p-2 rounded-full hover:bg-white/10 transition mr-auto"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2 2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg></a>` : '';
+
+                // NYT START: Generer knap og modal-HTML, hvis felterne er udfyldt
+                const infoModalButtonHtml = data.modalButtonText ? `<button id="info-modal-btn" title="${data.modalButtonText}" class="px-3 py-1.5 rounded-md hover:bg-white/10 transition font-semibold">${data.modalButtonText}</button>` : '';
+                const infoModalHtml = (data.modalButtonText && data.modalContentText) ? `
+                <div id="info-modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[100] hidden">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-4xl w-full max-h-[90vh] relative shadow-2xl flex flex-col">
+                        <div class="prose dark:prose-invert max-w-none overflow-y-auto">
+                            ${convertMarkdown(data.modalContentText).replace(/THEME_COLOR/g, data.themeColor)}
+                        </div>
+                        <button id="info-modal-close-btn" class="absolute -top-3 -right-3 text-white bg-gray-800 dark:bg-gray-600 rounded-full h-8 w-8 flex items-center justify-center text-2xl font-bold">&times;</button>
+                    </div>
+                </div>` : '';
+                // NYT SLUT
+
+                return `
+<!DOCTYPE html>
+<html lang="da" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${data.pageTitle}</title>
+    <script>if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) { document.documentElement.classList.add('dark'); } else { document.documentElement.classList.remove('dark'); }<\/script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"><\/script>
+    <script>tailwind.config = { darkMode: 'class' }<\/script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .theme-header { background-color: ${data.themeColor}; }
+        .dark .theme-header { background-color: #374151; }
+        .theme-menu { background-color: ${data.themeColor}E6; }
+        .dark .theme-menu { background-color: #374151E6; }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 transition-colors duration-300">
+    <header id="top" class="theme-header text-white shadow-md sticky top-0 z-50 transition-colors duration-300">
+        <div class="container mx-auto px-4 sm:px-6 py-3 flex justify-between items-center">
+            ${homeIconHtml}
+            <div class="flex items-center gap-1 sm:gap-2">
+                <!-- NYT: Den nye knap indsættes her -->
+                ${infoModalButtonHtml}
+                <button id="font-dec-btn" title="Mindre skrift" class="px-2 py-1 rounded-md hover:bg-white/10 transition text-sm font-bold">-A</button>
+                <button id="font-inc-btn" title="Større skrift" class="px-2 py-1 rounded-md hover:bg-white/10 transition text-lg font-bold">+A</button>
+                <button id="theme-toggle-btn" title="Skift tema" class="p-2 rounded-full hover:bg-white/10 transition"><svg id="theme-icon-sun" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg><svg id="theme-icon-moon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg></button>
+                <button id="menu-btn" title="Menu" class="p-2 rounded-md hover:bg-white/10 transition"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+            </div>
+        </div>
+        <div id="menu" class="hidden theme-menu absolute top-full left-0 w-full backdrop-blur-sm shadow-lg transition-colors duration-300"><nav class="container mx-auto px-4 py-4 flex flex-col space-y-2">${finalMenuItems}</nav></div>
+    </header>
+    <main class="container mx-auto px-6 py-8 md:py-12">
+        <section id="intro" class="mb-12 scroll-mt-24">
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-900 dark:text-gray-100 mb-4">${data.pageTitle}</h1>
+            ${data.pageDescription ? `<h2 class="text-xl md:text-2xl text-[${data.themeColor}] dark:text-gray-300 font-semibold mb-6">${data.pageDescription}</h2>` : ''}
+            ${topImagesSection}
+            ${audioSection}
+        </section>
+        <article class="prose dark:prose-invert max-w-none">${finalArticleHtml}</article>
+        ${gallerySection}
+        ${ctaSection}
+    </main>
+    <footer class="bg-gray-800 text-white mt-12"><div class="container mx-auto px-6 py-4 text-center text-sm"><p>Denne side er lavet af Poul Erik Løvskov for den lokalhistoriske forening Syd for Banen. Kontakt: pelovskov@gmail.com - 2025</p></div></footer>
+    <a href="#top" id="to-top-btn" class="fixed bottom-5 right-5 bg-[${data.themeColor}] text-white p-3 rounded-full shadow-lg hover:opacity-80 transition-opacity opacity-0 z-50"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg></a>
+
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[100] hidden"><div class="bg-white dark:bg-gray-800 p-4 rounded-lg max-w-4xl w-full max-h-[90vh] relative shadow-2xl flex flex-col"><img id="modal-img" src="" alt="" class="object-contain h-auto w-full flex-1 min-h-0"><div class="mt-4 text-center text-gray-700 dark:text-gray-300"><strong id="modal-title" class="block text-lg"></strong><p id="modal-description" class="text-sm mt-1"></p></div><button id="modal-close-btn" class="absolute -top-3 -right-3 text-white bg-gray-800 dark:bg-gray-600 rounded-full h-8 w-8 flex items-center justify-center text-2xl font-bold">&times;</button></div></div>
+    <!-- NYT: Den nye modals HTML indsættes her -->
+    ${infoModalHtml}
+
+    <script id="generator-data" type="application/json">${JSON.stringify(data, null, 2)}<\/script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const menuBtn = document.getElementById('menu-btn'), menu = document.getElementById('menu');
+            if (menuBtn && menu) {
+                const navLinks = menu.querySelectorAll('a');
+                menuBtn.addEventListener('click', (e) => { e.stopPropagation(); menu.classList.toggle('hidden'); });
+                navLinks.forEach(link => link.addEventListener('click', () => menu.classList.add('hidden')));
+                document.addEventListener('click', (e) => { if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !menuBtn.contains(e.target)) { menu.classList.add('hidden'); } });
+            }
+
+            const toTopBtn = document.getElementById('to-top-btn');
+            if (toTopBtn) {
+                window.addEventListener('scroll', () => toTopBtn.classList.toggle('opacity-0', window.scrollY <= 200));
+                toTopBtn.addEventListener('click', (e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+            }
+
+            const htmlEl = document.documentElement, themeToggleBtn = document.getElementById('theme-toggle-btn'), themeIconSun = document.getElementById('theme-icon-sun'), themeIconMoon = document.getElementById('theme-icon-moon');
+            if (themeToggleBtn && themeIconSun && themeIconMoon) {
+                const updateThemeIcons = (isDark) => { themeIconSun.classList.toggle('hidden', !isDark); themeIconMoon.classList.toggle('hidden', isDark); };
+                updateThemeIcons(htmlEl.classList.contains('dark'));
+                themeToggleBtn.addEventListener('click', () => { htmlEl.classList.toggle('dark'); const isDark = htmlEl.classList.contains('dark'); localStorage.setItem('theme', isDark ? 'dark' : 'light'); updateThemeIcons(isDark); });
+            }
+            const articleEl = document.querySelector('article'), fontIncBtn = document.getElementById('font-inc-btn'), fontDecBtn = document.getElementById('font-dec-btn');
+            if (articleEl && fontIncBtn && fontDecBtn) {
+                let fs = 1; const ufs = () => { articleEl.style.fontSize = fs.toFixed(2) + 'rem'; };
+                fontIncBtn.addEventListener('click', () => { if (fs < 1.4) { fs += 0.1; ufs(); } });
+                fontDecBtn.addEventListener('click', () => { if (fs > 0.8) { fs -= 0.1; ufs(); } });
+            }
+            const modal = document.getElementById('modal'), modalImg = document.getElementById('modal-img'), modalTitle = document.getElementById('modal-title'), modalDescription = document.getElementById('modal-description'), modalCloseBtn = document.getElementById('modal-close-btn'), galleryItems = document.querySelectorAll('.gallery-item');
+            if (modal) {
+                galleryItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        modalImg.src = item.dataset.src;
+                        modalImg.alt = item.dataset.alt;
+                        modalTitle.textContent = item.dataset.caption;
+                        modalDescription.textContent = item.dataset.description;
+                        modalTitle.style.display = item.dataset.caption ? 'block' : 'none';
+                        modalDescription.style.display = item.dataset.description ? 'block' : 'none';
+                        modal.classList.remove('hidden');
+                    });
+                });
+                const closeModal = () => modal.classList.add('hidden');
+                modalCloseBtn.addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => { if (e.target === modal) { closeModal(); } });
+            }
+
+            // NYT START: Script til at styre den nye info-modal
+            const infoModal = document.getElementById('info-modal'), infoModalBtn = document.getElementById('info-modal-btn'), infoModalCloseBtn = document.getElementById('info-modal-close-btn');
+            if (infoModal && infoModalBtn && infoModalCloseBtn) {
+                const openInfoModal = () => infoModal.classList.remove('hidden');
+                const closeInfoModal = () => infoModal.classList.add('hidden');
+                infoModalBtn.addEventListener('click', openInfoModal);
+                infoModalCloseBtn.addEventListener('click', closeInfoModal);
+                infoModal.addEventListener('click', (e) => { if (e.target === infoModal) { closeInfoModal(); } });
+            }
+            // NYT SLUT
+        });
+    <\/script>
+</body>
+</html>`;
+            }
+
+            function updatePreviewAndDownload() {
+                try {
+                    const generatedHtml = generateHtml();
+                    previewFrame.srcdoc = generatedHtml;
+                    const blob = new Blob([generatedHtml], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    const pageTitle = (document.getElementById('pageTitle').value.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'min-side').replace(/^-+|-+$/g, '');
+                    downloadLink.href = url;
+                    downloadLink.download = `${pageTitle}.html`;
+                    downloadLink.style.display = 'block';
+                } catch (error) { console.error("Fejl ved generering af preview:", error); showNotification("Der opstod en fejl under opdatering.", "error"); }
+            }
+
+            uploadBtn.addEventListener('click', () => htmlUploader.click());
+            htmlUploader.addEventListener('change', (event) => {
+                const file = event.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const doc = new DOMParser().parseFromString(e.target.result, 'text/html');
+                    const dataScript = doc.getElementById('generator-data');
+                    if (!dataScript) { showNotification("Fejl: Kunne ikke finde data i den uploadede fil.", "error"); return; }
+                    try { const data = JSON.parse(dataScript.textContent); populateForm(data); showNotification("Siden er indlæst og klar til redigering!", "success"); } catch (error) { showNotification("Kunne ikke læse data fra filen.", "error"); }
+                };
+                reader.readAsText(file);
+                event.target.value = '';
+            });
+
+            function populateForm(data) {
+                galleryInputsContainer.innerHTML = ''; ctaInputsContainer.innerHTML = ''; galleryImageCount = 0; ctaCount = 0;
+                document.getElementById('pageTitle').value = data.pageTitle || '';
+                document.getElementById('pageDescription').value = data.pageDescription || '';
+                document.getElementById('overviewUrl').value = data.overviewUrl || '';
+                // NYT START: Udfyld de nye felter ved upload
+                document.getElementById('modalButtonText').value = data.modalButtonText || '';
+                document.getElementById('modalContentText').value = data.modalContentText || '';
+                // NYT SLUT
+                document.getElementById('audioTitle').value = data.audioTitle || '';
+                document.getElementById('audioUrl').value = data.audioUrl || '';
+                document.getElementById('imageUrl1').value = data.imageUrl1 || '';
+                document.getElementById('imageCaption1').value = data.imageCaption1 || '';
+                document.getElementById('imageAlt1').value = data.imageAlt1 || '';
+                document.getElementById('imageUrl2').value = data.imageUrl2 || '';
+                document.getElementById('imageCaption2').value = data.imageCaption2 || '';
+                document.getElementById('imageAlt2').value = data.imageAlt2 || '';
+                document.getElementById('articleText').value = data.articleText || '';
+                if(data.themeColor) { document.querySelector(`input[name="theme"][value="${data.themeColor}"]`).checked = true; }
+                (data.galleryImages || []).forEach(img => addGalleryInput(img.url, img.caption, img.alt, img.description || ''));
+                (data.ctas || []).forEach(cta => addCtaInput(cta.text, cta.url));
+                updatePreviewAndDownload();
+            }
+
+            function showNotification(message, type = 'success') {
+                const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+                const notification = document.createElement('div');
+                notification.className = `notification text-white p-4 rounded-lg shadow-lg ${bgColor}`;
+                notification.textContent = message;
+                document.getElementById('notification-area').appendChild(notification);
+                setTimeout(() => notification.remove(), 4000);
+            }
+
+            let typingTimer;
+            form.addEventListener('input', () => { clearTimeout(typingTimer); typingTimer = setTimeout(updatePreviewAndDownload, 500); });
+            for(let i=0; i<4; i++) addGalleryInput();
+            for(let i=0; i<2; i++) addCtaInput();
+            updatePreviewAndDownload();
+        });
+    </script>
+</body>
+</html>

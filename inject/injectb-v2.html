@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <title>Material Design HTML Injector (V2)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; padding: 20px; max-width: 900px; margin: auto; background-color: #f4f4f4; color: #333; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h2 { color: #0056b3; }
+        input, button, a { font-size: 1em; padding: 10px 15px; margin-top: 5px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; }
+        input[type="text"], input[type="file"] { width: 100%; box-sizing: border-box; }
+        button, a.button { background-color: #007bff; color: white; text-decoration: none; display: inline-block; border: none; }
+        button:hover, a.button:hover { background-color: #0056b3; }
+        #output-container { margin-top: 20px; }
+        #output-code { width: 100%; height: 400px; background-color: #2d2d2d; color: #f1f1f1; border: none; border-radius: 5px; padding: 10px; box-sizing: border-box; font-family: monospace; }
+        #download-link { display: none; margin-top: 10px; }
+        .flex-container { display: flex; gap: 10px; align-items: center; }
+        .step { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+    <!-- SKABELON: Dette er de komponenter (HTML, CSS, JS), der bliver indsat i din fil -->
+    <template id="component-template-source">
+
+        <!-- === HEADER / TOP-BAR === -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <a href="index.html" class="top-bar-btn home-link" title="Gå til forsiden">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/></svg>
+                </a>
+            </div>
+            <div class="top-bar-right">
+                <div class="font-controls-top">
+                    <button id="font-decrease" title="Mindre tekst">A-</button>
+                    <span>Tekst</span>
+                    <button id="font-increase" title="Større tekst">A+</button>
+                </div>
+                <button id="theme-toggle-output" class="top-bar-btn" title="Skift tema">
+                    <svg class="sun-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M6.76 4.84l-1.8-1.79-1.41 1.41 1.79 1.8 1.42-1.42zM4 10.5H1v2h3v-2zm9-9.95h-2V3.5h2V.55zM12 22.45h-2V19.5h2v2.95zm5.16-19.1l-1.79 1.8 1.41 1.41 1.8-1.79-1.42-1.42zM18.36 17.78l1.79 1.8 1.41-1.41-1.8-1.79-1.41 1.42zM20 10.5h3v2h-3v-2zM9.64 17.78l1.79 1.8 1.41-1.41-1.8-1.79-1.41 1.42zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M9.37 5.51C9.19 6.15 9 6.82 9 7.5c0 4.42 3.58 8 8 8 .68 0 1.35-.19 1.99-.51-3.11.89-6.35-.99-7.48-3.9-1.13-2.92-.24-6.22 2.87-7.4zm-1.04-2.43C4.98 4.29 2 8.05 2 12.5c0 4.97 4.03 9 9 9 3.31 0 6.22-1.79 7.8-4.44-1.12 1.13-2.6 1.84-4.22 1.84-3.59 0-6.5-2.91-6.5-6.5 0-1.75.75-3.32 1.92-4.48z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- === SCROLL-TIL-TOP KNAP === -->
+        <button id="scrollToTopBtn" class="scroll-to-top-btn" title="Gå til toppen"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"/></svg></button>
+
+        <!-- === FOOTER === -->
+        <footer class="page-footer">
+            <p class="copyright-text">© 2025 - Poul Erik Løvskov.</p>
+            <p><a href="index.html" class="home-link">Tilbage til forsiden</a></p>
+        </footer>
+
+        <!-- === CSS STYLES === -->
+        <style id="injected-styles">
+            :root {
+                --base-font-size: 1em;
+                --line-height: 1.6;
+                --md-sys-color-primary: #6750A4;
+                --md-sys-color-on-primary: #FFFFFF;
+                --md-sys-color-background: #FFFBFE;
+                --md-sys-color-on-background: #1C1B1F;
+                --md-sys-color-surface: #FFFBFE;
+                --md-sys-color-on-surface: #1C1B1F;
+                --md-sys-color-surface-variant: #E7E0EC;
+                --md-sys-color-outline: #79747E;
+                --icon-fill: #555;
+            }
+            .dark-theme {
+                --md-sys-color-primary: #D0BCFF;
+                --md-sys-color-on-primary: #381E72;
+                --md-sys-color-background: #1C1B1F;
+                --md-sys-color-on-background: #E6E1E5;
+                --md-sys-color-surface: #1C1B1F;
+                --md-sys-color-on-surface: #E6E1E5;
+                --md-sys-color-surface-variant: #49454F;
+                --md-sys-color-outline: #938F99;
+                --icon-fill: #adb5bd;
+            }
+            html { scroll-behavior: smooth; font-size: var(--base-font-size); }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                background-color: var(--md-sys-color-background);
+                color: var(--md-sys-color-on-background);
+                margin: 0;
+                padding: 0;
+                line-height: var(--line-height);
+                transition: background-color 0.3s, color 0.3s;
+            }
+            main {
+                max-width: 800px;
+                margin: 20px auto;
+                padding: 20px 40px;
+                background-color: var(--md-sys-color-surface);
+                border-radius: 12px;
+            }
+            .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; position: sticky; top: 0; background-color: var(--md-sys-color-background); padding: 5px 20px; z-index: 1001; border-bottom: 1px solid var(--md-sys-color-outline); max-width: 880px; margin: 0 auto; }
+            .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 10px; }
+            .top-bar-btn { background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+            .top-bar-btn:hover { background-color: var(--md-sys-color-surface-variant); }
+            .top-bar-btn svg { width: 24px; height: 24px; fill: var(--icon-fill); }
+            .font-controls-top { display: flex; align-items: center; gap: 5px; border: 1px solid var(--md-sys-color-outline); border-radius: 20px; padding: 0 5px; color: var(--md-sys-color-on-surface-variant); }
+            .font-controls-top button { font-size: 1.2em; font-weight: bold; color: var(--icon-fill); background: none; border: none; cursor: pointer; padding: 5px 8px; }
+            h1, h2, h3, h4 { color: var(--md-sys-color-primary); line-height: 1.2; }
+            h1 { font-size: 2.5em; } h2 { font-size: 2em; } h3 { font-size: 1.5em; }
+            p, li { font-size: 1.1em; }
+            a { color: var(--md-sys-color-primary); text-decoration: none; font-weight: 500; }
+            a:hover { text-decoration: underline; }
+            img, figure { max-width: 100%; height: auto; border-radius: 8px; margin: 20px 0; }
+            img { box-shadow: 0 4px 8px 0 rgba(0,0,0,0.1); }
+            figure { margin: 20px 0; }
+            figcaption { font-size: 0.9em; color: var(--md-sys-color-on-surface-variant); text-align: center; }
+            .scroll-to-top-btn { position: fixed; bottom: 20px; right: 20px; background-color: var(--md-sys-color-primary-container); width: 45px; height: 45px; border-radius: 12px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transform: translateY(100px); transition: opacity 0.3s, visibility 0.3s, transform 0.3s; z-index: 1000; }
+            .scroll-to-top-btn.show { opacity: 1; visibility: visible; transform: translateY(0); }
+            .scroll-to-top-btn svg { fill: var(--md-sys-color-on-primary-container); }
+            .page-footer { text-align: center; padding: 20px; margin: 40px auto 0 auto; max-width: 880px; border-top: 1px solid var(--md-sys-color-outline); font-size: 0.9em; color: var(--md-sys-color-on-surface-variant); }
+        </style>
+
+        <!-- === JAVASCRIPT til funktioner === -->
+        <script id="injected-script">
+        (function() {
+            const root = document.documentElement;
+            const themeToggle = document.getElementById('theme-toggle-output');
+            if (themeToggle) {
+                const sunIcon = themeToggle.querySelector('.sun-icon');
+                const moonIcon = themeToggle.querySelector('.moon-icon');
+                const applyTheme = (theme) => {
+                    document.body.classList.toggle('dark-theme', theme === 'dark');
+                    if (sunIcon && moonIcon) {
+                        sunIcon.style.display = theme === 'dark' ? 'block' : 'none';
+                        moonIcon.style.display = theme === 'dark' ? 'none' : 'block';
+                    }
+                };
+                themeToggle.addEventListener('click', () => {
+                    const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+                    localStorage.setItem('pageTheme', newTheme);
+                    applyTheme(newTheme);
+                });
+                const savedTheme = localStorage.getItem('pageTheme');
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+            }
+            const toTopBtn = document.getElementById('scrollToTopBtn');
+            if(toTopBtn) {
+                window.addEventListener('scroll', () => toTopBtn.classList.toggle('show', window.scrollY > 300));
+                toTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+            }
+            const fontIncreaseBtn = document.getElementById('font-increase');
+            const fontDecreaseBtn = document.getElementById('font-decrease');
+            if (fontIncreaseBtn && fontDecreaseBtn) {
+                let currentFontSize = parseFloat(localStorage.getItem('fontSize')) || 1.0;
+                const setFontSize = (size) => {
+                    currentFontSize = Math.max(0.8, Math.min(1.4, size));
+                    root.style.setProperty('--base-font-size', currentFontSize + 'em');
+                    localStorage.setItem('fontSize', currentFontSize);
+                };
+                fontIncreaseBtn.addEventListener('click', () => setFontSize(currentFontSize + 0.1));
+                fontDecreaseBtn.addEventListener('click', () => setFontSize(currentFontSize - 0.1));
+                setFontSize(currentFontSize);
+            }
+        })();
+        </script>
+    </template>
+    <!-- === SLUT PÅ SKABELON === -->
+
+    <div class="container">
+        <h1>Material Design HTML Injector (V2)</h1>
+        <p>Dette værktøj tilføjer en moderne header og footer til en HTML-fil fra f.eks. Obsidian, inspireret af Google Material Design 3. Det fjerner også gamle styles for at sikre korrekt centrering.</p>
+
+        <div class="step">
+            <h2>Trin 1: Vælg din HTML-fil</h2>
+            <input type="file" id="html-file-input" accept=".html,.htm">
+        </div>
+
+        <div class="step">
+            <h2>Trin 2: Angiv link til forsiden</h2>
+            <p>Indtast den URL, som "Hjem"-knappen og footer-linket skal pege på (f.eks. "index.html" eller en fuld URL).</p>
+            <input type="text" id="home-link-input" value="index.html">
+        </div>
+
+        <div class="step">
+            <h2>Trin 3: Angiv copyright-tekst til footeren</h2>
+            <input type="text" id="copyright-input" value="© 2025 - Poul Erik Løvskov.">
+        </div>
+
+        <div class="step">
+            <h2>Trin 4: Generér den nye fil</h2>
+            <div class="flex-container">
+                 <button id="process-button">Tilføj Komponenter</button>
+                 <a id="download-link" class="button">Download den færdige fil</a>
+            </div>
+        </div>
+
+        <div id="output-container">
+            <h2>Resultat (preview af koden):</h2>
+            <textarea id="output-code" readonly placeholder="Den færdige HTML-kode vil blive vist her..."></textarea>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('html-file-input');
+        const processBtn = document.getElementById('process-button');
+        const outputCode = document.getElementById('output-code');
+        const downloadLink = document.getElementById('download-link');
+        const homeLinkInput = document.getElementById('home-link-input');
+        const copyrightInput = document.getElementById('copyright-input');
+
+        processBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Vælg venligst en fil først.");
+                return;
+            }
+
+            const homeLinkUrl = homeLinkInput.value.trim();
+            if (!homeLinkUrl) {
+                alert("Indtast venligst en URL for 'hjem'-linket.");
+                return;
+            }
+
+            const copyrightText = copyrightInput.value.trim();
+
+            try {
+                const templateElement = document.getElementById('component-template-source');
+                const templateText = templateElement.innerHTML;
+
+                const targetText = await file.text();
+
+                const parser = new DOMParser();
+                const templateDoc = parser.parseFromString(templateText, 'text/html');
+                const targetDoc = parser.parseFromString(targetText, 'text/html');
+
+                // *** NYT: Fjern eksisterende style-tags fra head for at undgå konflikter ***
+                targetDoc.querySelectorAll('head > style').forEach(styleTag => styleTag.remove());
+
+                templateDoc.querySelectorAll('.home-link').forEach(link => link.href = homeLinkUrl);
+                const copyrightElement = templateDoc.querySelector('.copyright-text');
+                if (copyrightElement) {
+                    copyrightElement.textContent = copyrightText;
+                }
+
+                const headerElement = templateDoc.querySelector('header.top-bar');
+                const scrollToTopElement = templateDoc.querySelector('#scrollToTopBtn');
+                const stylesElement = templateDoc.querySelector('#injected-styles');
+                const scriptElement = document.importNode(templateDoc.querySelector('#injected-script'), true);
+                const footerElement = templateDoc.querySelector('footer.page-footer');
+
+                if (!headerElement || !stylesElement || !scriptElement || !scrollToTopElement || !footerElement) {
+                    throw new Error("Skabelonen mangler nødvendige elementer.");
+                }
+
+                // Wrap body-indhold i et <main> tag
+                const mainElement = targetDoc.createElement('main');
+                while (targetDoc.body.firstChild) {
+                    mainElement.appendChild(targetDoc.body.firstChild);
+                }
+                targetDoc.body.appendChild(mainElement);
+
+                // Indsæt de nye elementer
+                targetDoc.head.appendChild(stylesElement);
+                targetDoc.body.prepend(headerElement);
+                targetDoc.body.appendChild(footerElement);
+                targetDoc.body.appendChild(scrollToTopElement);
+                targetDoc.body.appendChild(scriptElement);
+
+                const finalHtml = '<!DOCTYPE html>\n' + targetDoc.documentElement.outerHTML;
+
+                outputCode.value = finalHtml;
+
+                const blob = new Blob([finalHtml], { type: 'text/html' });
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = `opdateret-${file.name}`;
+                downloadLink.style.display = 'inline-block';
+
+                alert('Komponenter er tilføjet! Filen er nu centreret og klar til download.');
+
+            } catch (error) {
+                console.error("Der opstod en fejl:", error);
+                alert("Der skete en fejl: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

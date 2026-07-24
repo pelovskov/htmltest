@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digikam til Leaflet Koordinat Konverter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-lg mx-auto bg-white rounded-xl shadow-lg p-8">
+
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Koordinat Konverter</h1>
+            <p class="text-gray-500 mt-2">Fra Digikam til Leaflet format</p>
+        </div>
+
+        <!-- Input Formular -->
+        <div class="space-y-6">
+            <div>
+                <label for="digikam-coords" class="block text-sm font-medium text-gray-700 mb-2">Indsæt Digikam koordinater</label>
+                <textarea id="digikam-coords" rows="3" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder='Eks: 12° 05' 28,6"E,  55° 37' 39,3"N'></textarea>
+            </div>
+
+            <div>
+                <button id="convert-button" class="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition shadow-md">
+                    Konverter
+                </button>
+            </div>
+
+            <!-- Output Felt -->
+            <div>
+                <label for="leaflet-coords" class="block text-sm font-medium text-gray-700 mb-2">Leaflet koordinater (Latitude, Longitude)</label>
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="leaflet-coords" readonly class="w-full p-3 bg-gray-50 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="Resultat vises her...">
+                    <button id="copy-button" class="bg-gray-200 text-gray-700 font-semibold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition">
+                        Kopiér
+                    </button>
+                </div>
+                 <p id="message" class="text-sm text-green-600 mt-2 h-4"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const convertBtn = document.getElementById('convert-button');
+        const copyBtn = document.getElementById('copy-button');
+        const digikamInput = document.getElementById('digikam-coords');
+        const leafletOutput = document.getElementById('leaflet-coords');
+        const messageEl = document.getElementById('message');
+
+        /**
+         * Parses a single DMS (Degrees, Minutes, Seconds) string into decimal degrees.
+         * @param {string} dmsString - The string to parse, e.g., '55° 37' 39,3"N'
+         * @returns {number|null} The coordinate in decimal degrees or null if parsing fails.
+         */
+        const parseDMS = (dmsString) => {
+            // 1. Clean up string: trim whitespace and replace comma decimal with a period.
+            const cleanStr = dmsString.trim().replace(',', '.');
+
+            // 2. Use a regular expression to find degrees, minutes, seconds, and direction.
+            const regex = /(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*"\s*([NSEW])/i;
+            const match = cleanStr.match(regex);
+
+            if (!match) {
+                return null; // Return null if the format doesn't match.
+            }
+
+            // 3. Extract the matched parts and convert them to numbers.
+            const degrees = parseFloat(match[1]);
+            const minutes = parseFloat(match[2]);
+            const seconds = parseFloat(match[3]);
+            const direction = match[4].toUpperCase();
+
+            // 4. Calculate the decimal degrees using the formula.
+            let decimalDegrees = degrees + (minutes / 60) + (seconds / 3600);
+
+            // 5. Make the value negative for South and West directions.
+            if (direction === 'S' || direction === 'W') {
+                decimalDegrees *= -1;
+            }
+
+            return decimalDegrees;
+        };
+
+        /**
+         * Main function to handle the conversion process.
+         */
+        const handleConversion = () => {
+            const inputValue = digikamInput.value;
+            leafletOutput.value = ''; // Clear previous output
+            messageEl.textContent = ''; // Clear message
+
+            if (!inputValue.trim()) {
+                messageEl.textContent = 'Indtast venligst koordinater.';
+                messageEl.classList.remove('text-green-600');
+                messageEl.classList.add('text-red-600');
+                return;
+            }
+
+            // Split the input string by a comma followed by one or more whitespace characters.
+            // This prevents splitting on the decimal comma (e.g., "28,6").
+            const parts = inputValue.split(/,\s+/);
+
+            if (parts.length !== 2) {
+                leafletOutput.value = 'Ugyldigt format.';
+                messageEl.textContent = 'Forventer to dele adskilt af et komma.';
+                messageEl.classList.remove('text-green-600');
+                messageEl.classList.add('text-red-600');
+                return;
+            }
+
+            let lat = null;
+            let lon = null;
+
+            // Loop through the two parts and identify which is Latitude (N/S) and which is Longitude (E/W).
+            parts.forEach(partStr => {
+                const upperPart = partStr.toUpperCase();
+                if (upperPart.includes('N') || upperPart.includes('S')) {
+                    lat = parseDMS(partStr);
+                } else if (upperPart.includes('E') || upperPart.includes('W')) {
+                    lon = parseDMS(partStr);
+                }
+            });
+
+            // Check if both latitude and longitude were successfully parsed.
+            if (lat !== null && lon !== null) {
+                // Format for Leaflet: Latitude, Longitude with 6 decimal places.
+                leafletOutput.value = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+            } else {
+                leafletOutput.value = 'Kunne ikke konvertere.';
+                messageEl.textContent = 'Tjek venligst formatet igen.';
+                messageEl.classList.remove('text-green-600');
+                messageEl.classList.add('text-red-600');
+            }
+        };
+
+        /**
+         * Copies the content of the output field to the clipboard.
+         */
+        const copyToClipboard = () => {
+            if (!leafletOutput.value || leafletOutput.value.includes('...')) {
+                messageEl.textContent = 'Intet at kopiere.';
+                messageEl.classList.remove('text-green-600');
+                messageEl.classList.add('text-red-600');
+                return;
+            }
+
+            // Select the text field
+            leafletOutput.select();
+            leafletOutput.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                // Use the modern clipboard API if available, with a fallback to execCommand.
+                 document.execCommand('copy');
+                 messageEl.textContent = 'Kopieret til udklipsholder!';
+                 messageEl.classList.add('text-green-600');
+                 messageEl.classList.remove('text-red-600');
+
+                // Temporarily change button text for visual feedback.
+                const originalButtonText = copyBtn.textContent;
+                copyBtn.textContent = 'Kopieret!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalButtonText;
+                    messageEl.textContent = '';
+                }, 2000);
+
+            } catch (err) {
+                 messageEl.textContent = 'Kopiering fejlede.';
+                 messageEl.classList.remove('text-green-600');
+                 messageEl.classList.add('text-red-600');
+                 console.error('Fejl ved kopiering: ', err);
+            }
+        };
+
+        // Add event listeners to the buttons
+        convertBtn.addEventListener('click', handleConversion);
+        copyBtn.addEventListener('click', copyToClipboard);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <title>HTML Component Injector</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 900px; margin: auto; background-color: #f4f4f4; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; }
+        input, button, a { font-size: 1em; padding: 10px 15px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer; }
+        input[type="text"] { width: 100%; box-sizing: border-box; }
+        button, a { background-color: #007bff; color: white; text-decoration: none; display: inline-block; }
+        button:hover, a:hover { background-color: #0056b3; }
+        #output-container { margin-top: 20px; }
+        #output-code { width: 100%; height: 400px; background-color: #2d2d2d; color: #f1f1f1; border: none; border-radius: 5px; padding: 10px; box-sizing: border-box; }
+        #download-link { display: none; margin-top: 10px; }
+        .flex-container { display: flex; gap: 10px; align-items: center; }
+        .step { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+
+    <template id="component-template-source">
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <a href="index.html" class="top-bar-btn" title="Gå til forsiden">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="var(--icon-fill)">
+                        <path d="M0 0h24v24H0V0z" fill="none"/><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8h5z"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="top-bar-right">
+                <div class="font-controls-top">
+                    <button id="linespacing-decrease" title="Mindre linjeafstand">-</button>
+                    <button id="linespacing-increase" title="Større linjeafstand">+</button>
+                </div>
+                <div class="font-controls-top">
+                    <button id="font-decrease" title="Mindre tekst">A-</button>
+                    <button id="font-increase" title="Større tekst">A+</button>
+                </div>
+                <button id="theme-toggle-output" class="top-bar-btn" title="Skift tema">
+                    <svg class="sun-icon" style="display:none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM12 15c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3zM12 5V3h0V1h-1v2h-1v2h2zm7.07 2.93l1.41-1.41-1.41-1.41-1.41 1.41 1.41 1.41zM19 11h2v2h-2v-2zm-2.93 7.07l1.41 1.41 1.41-1.41-1.41-1.41-1.41 1.41zM13 19v2h-2v-2h2zm-7.07-2.93l-1.41 1.41 1.41 1.41 1.41-1.41-1.41-1.41zM5 13H3v-2h2v2zm2.93-7.07l-1.41-1.41-1.41 1.41 1.41 1.41 1.41-1.41z"/></svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12.31 2.05c-1.18.2-2.3.62-3.34 1.25-3.39 2.05-5.32 6.04-4.88 10.15.35 3.32 2.61 6.22 5.66 7.42 5.06 2 10.43-.68 12.3-5.26.24-.59.18-1.25-.13-1.78-.45-.76-1.46-1.02-2.31-.62-2.39 1.13-5.33-.21-6.68-2.52-1.35-2.3-1.1-5.29.62-6.95 1.05-1.02 2.5-1.52 3.96-1.45.91.05 1.77-.42 2.19-1.23.47-.91.2-2.02-.63-2.61-.55-.39-1.2-.59-1.87-.59-.4 0-.8.06-1.2.18z"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <button id="scrollToTopBtn" class="scroll-to-top-btn" title="Gå til toppen"><svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6 1.41 1.41z"/></svg></button>
+
+        <footer style="text-align: center; padding: 20px; margin-top: 40px; border-top: 1px solid var(--container-border); font-size: 0.9em; color: var(--text-color);">
+            <!-- DENNE LINJE ER NU ÆNDRET -->
+            <p>© 2025 - Poul Erik Løvskov.</p>
+            <p><a href="index.html">Tilbage til forsiden</a></p>
+        </footer>
+
+        <style id="header-styles">
+            :root { --base-font-size: 1em; --line-height: 1.6; --bg-color: #f0f2f5; --text-color: #212529; --heading-color: #333; --container-bg: #ffffff; --container-border: #ddd; --link-color: #007bff; --cta-bg: #007bff; --cta-hover: #0056b3; --icon-fill: #555; }
+            .dark-theme { --bg-color: #121212; --text-color: #adb5bd; --heading-color: #e9ecef; --container-bg: #1e1e1e; --container-border: #333; --icon-fill: #adb5bd; }
+            html { scroll-behavior: smooth; font-size: var(--base-font-size); }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; transition: background-color 0.3s, color 0.3s; }
+            .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 10px; position: sticky; top: 0; background-color: var(--bg-color); padding: 5px 10px; z-index: 1001; }
+            .top-bar-left, .top-bar-right { display: flex; align-items: center; gap: 10px; }
+            .top-bar-btn { background: none; border: none; cursor: pointer; padding: 8px; display: flex; align-items: center; text-decoration: none; }
+            .top-bar-btn svg { width: 26px; height: 26px; fill: var(--icon-fill); }
+            .font-controls-top { display: flex; align-items: center; gap: 5px; border: 1px solid var(--container-border); border-radius: 20px; padding: 0 5px; }
+            .font-controls-top button { font-size: 1.2em; font-weight: bold; color: var(--icon-fill); background: none; border: none; cursor: pointer; padding: 5px 8px; }
+            .scroll-to-top-btn { position: fixed; bottom: 20px; right: 20px; background-color: var(--cta-bg); width: 45px; height: 45px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 8px rgba(0,0,0,0.2); opacity: 0; visibility: hidden; transform: translateY(100px); transition: opacity 0.3s, visibility 0.3s, transform 0.3s; z-index: 1000; }
+            .scroll-to-top-btn.show { opacity: 1; visibility: visible; transform: translateY(0); }
+            .scroll-to-top-btn:hover { background-color: var(--cta-hover); }
+            .scroll-to-top-btn svg { width: 24px; height: 24px; fill: white; }
+        </style>
+
+        <script id="header-script">
+        (function() {
+            const root = document.documentElement;
+            const themeToggle = document.getElementById('theme-toggle-output');
+            if (themeToggle) {
+                const sunIcon = themeToggle.querySelector('.sun-icon');
+                const moonIcon = themeToggle.querySelector('.moon-icon');
+                const applyTheme = (theme) => { document.body.classList.toggle('dark-theme', theme === 'dark'); sunIcon.style.display = theme === 'dark' ? 'block' : 'none'; moonIcon.style.display = theme === 'dark' ? 'none' : 'block'; };
+                themeToggle.addEventListener('click', () => { const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark'; localStorage.setItem('pageTheme', newTheme); applyTheme(newTheme); });
+                const savedTheme = localStorage.getItem('pageTheme'); const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+            }
+            const toTopBtn = document.getElementById('scrollToTopBtn'); if(toTopBtn) { window.addEventListener('scroll', () => toTopBtn.classList.toggle('show', window.scrollY > 300)); toTopBtn.addEventListener('click', () => window.scrollTo({ top: 0 })); }
+            const fontIncreaseBtn = document.getElementById('font-increase'); const fontDecreaseBtn = document.getElementById('font-decrease');
+            if (fontIncreaseBtn && fontDecreaseBtn) {
+                let currentFontSize = parseFloat(localStorage.getItem('fontSize')) || 1.0;
+                const setFontSize = (size) => { currentFontSize = Math.max(0.7, Math.min(1.5, size)); root.style.setProperty('--base-font-size', currentFontSize + 'em'); localStorage.setItem('fontSize', currentFontSize); };
+                fontIncreaseBtn.addEventListener('click', () => setFontSize(currentFontSize + 0.1)); fontDecreaseBtn.addEventListener('click', () => setFontSize(currentFontSize - 0.1));
+                setFontSize(currentFontSize);
+            }
+            const linespacingIncreaseBtn = document.getElementById('linespacing-increase'); const linespacingDecreaseBtn = document.getElementById('linespacing-decrease');
+            if (linespacingIncreaseBtn && linespacingDecreaseBtn) {
+                let currentLineHeight = parseFloat(localStorage.getItem('lineHeight')) || 1.6;
+                const setLineHeight = (height) => { currentLineHeight = Math.max(1.4, Math.min(1.7, height)); root.style.setProperty('--line-height', currentLineHeight); localStorage.setItem('lineHeight', currentLineHeight); }
+                linespacingIncreaseBtn.addEventListener('click', () => setLineHeight(currentLineHeight + 0.05)); linespacingDecreaseBtn.addEventListener('click', () => setLineHeight(currentLineHeight - 0.05));
+                setLineHeight(currentLineHeight);
+            }
+        })();
+        </script>
+    </template>
+
+    <div class="container">
+        <h1>HTML Component Injector</h1>
+        <p>Dette værktøj tilføjer en standard-header og -footer til en HTML-fil.</p>
+
+        <div class="step">
+            <h2>Trin 1: Vælg den fil, der skal modificeres</h2>
+            <input type="file" id="html-file-input" accept=".html">
+        </div>
+
+        <div class="step">
+            <h2>Trin 2: Angiv link til forsiden</h2>
+            <p>Indtast den URL, som "Hjem"-knappen og footer-linket skal pege på.</p>
+            <input type="text" id="home-link-input" value="index.html">
+        </div>
+
+        <div class="step">
+            <h2>Trin 3: Generér den nye fil</h2>
+            <div class="flex-container">
+                 <button id="process-button">Tilføj Komponenter</button>
+                 <a id="download-link">Download den færdige fil</a>
+            </div>
+        </div>
+
+        <div id="output-container">
+            <h2>Resultat (preview):</h2>
+            <textarea id="output-code" readonly></textarea>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('html-file-input');
+        const processBtn = document.getElementById('process-button');
+        const outputCode = document.getElementById('output-code');
+        const downloadLink = document.getElementById('download-link');
+        const homeLinkInput = document.getElementById('home-link-input');
+
+        processBtn.addEventListener('click', async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Vælg venligst en fil først.");
+                return;
+            }
+
+            const homeLinkUrl = homeLinkInput.value.trim();
+            if (!homeLinkUrl) {
+                alert("Indtast venligst en URL for 'hjem'-linket.");
+                return;
+            }
+
+            try {
+                const templateElement = document.getElementById('component-template-source');
+                const templateText = templateElement.innerHTML;
+
+                const targetText = await file.text();
+
+                const parser = new DOMParser();
+                const templateDoc = parser.parseFromString(templateText, 'text/html');
+                const targetDoc = parser.parseFromString(targetText, 'text/html');
+
+                const headerLinkElement = templateDoc.querySelector('header.top-bar a.top-bar-btn');
+                const footerLinkElement = templateDoc.querySelector('footer a');
+
+                if (headerLinkElement) {
+                    headerLinkElement.href = homeLinkUrl;
+                }
+                if (footerLinkElement) {
+                    footerLinkElement.href = homeLinkUrl;
+                }
+
+                const headerElement = templateDoc.querySelector('header.top-bar');
+                const scrollToTopElement = templateDoc.querySelector('#scrollToTopBtn');
+                const stylesElement = templateDoc.querySelector('#header-styles');
+                const scriptElement = document.importNode(templateDoc.querySelector('#header-script'), true);
+                const footerElement = templateDoc.querySelector('footer');
+
+                if (!headerElement || !stylesElement || !scriptElement || !scrollToTopElement || !footerElement) {
+                    throw new Error("Skabelonen i builder.html mangler nødvendige elementer.");
+                }
+
+                targetDoc.head.appendChild(stylesElement);
+                targetDoc.body.prepend(headerElement);
+                targetDoc.body.appendChild(footerElement);
+                targetDoc.body.appendChild(scrollToTopElement);
+                targetDoc.body.appendChild(scriptElement);
+
+                const finalHtml = '<!DOCTYPE html>\n' + targetDoc.documentElement.outerHTML;
+
+                outputCode.value = finalHtml;
+
+                const blob = new Blob([finalHtml], { type: 'text/html' });
+                downloadLink.href = URL.createObjectURL(blob);
+                downloadLink.download = `processed-${file.name}`;
+                downloadLink.style.display = 'inline-block';
+
+                alert('Komponenter tilføjet! Du kan nu se preview og downloade filen.');
+
+            } catch (error) {
+                console.error("Der opstod en fejl:", error);
+                alert("Der skete en fejl: " + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="da" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Adresser på Kort</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <style>
+        #map { height: 100%; width: 100%; border-radius: 0.5rem; }
+        .custom-shadow { box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .leaflet-crosshair { cursor: crosshair; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans h-full flex flex-col md:flex-row p-4 gap-4">
+
+    <!-- Kontrolpanel -->
+    <div class="w-full md:w-1/3 lg:w-1/4 bg-white p-6 rounded-lg custom-shadow flex flex-col gap-4 h-full overflow-y-auto">
+        <header>
+            <h1 class="text-2xl font-bold text-gray-800">Find Adresser på Kort</h1>
+            <p class="text-sm text-gray-600 mt-1">Indtast en adresse eller klik på kortet for at finde og vise den.</p>
+        </header>
+
+        <div class="flex flex-col gap-2 border-b pb-4">
+            <label for="address-input" class="font-semibold text-gray-700">Find via Adresse</label>
+            <input type="text" id="address-input" placeholder="f.eks. Rådhuspladsen 1, København" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <button id="add-address-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-semibold disabled:bg-gray-400">Tilføj</button>
+
+            <label for="reverse-geocode-btn" class="font-semibold text-gray-700 mt-2">Find via Kort</label>
+            <button id="reverse-geocode-btn" class="w-full bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700 transition-colors font-semibold">Vælg Punkt på Kort</button>
+            <p id="error-message" class="text-red-500 text-sm h-4"></p>
+        </div>
+
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-2">Tilføjede Adresser</h2>
+            <ul id="address-list" class="space-y-2"></ul>
+        </div>
+
+        <div class="mt-auto pt-4">
+             <button id="clear-map-btn" class="w-full bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors font-semibold">Ryd Kort</button>
+        </div>
+    </div>
+
+    <!-- Kortvisning -->
+    <div class="w-full md:w-2/3 lg:w-3/4 h-full rounded-lg custom-shadow">
+        <div id="map"></div>
+    </div>
+
+    <script>
+        // 1. Initialisering af kort og globale variable
+        const map = L.map('map').setView([56.2639, 9.5018], 7);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+        const addressInput = document.getElementById('address-input');
+        const addAddressBtn = document.getElementById('add-address-btn');
+        const addressList = document.getElementById('address-list');
+        const errorMessage = document.getElementById('error-message');
+        const clearMapBtn = document.getElementById('clear-map-btn');
+        const reverseGeocodeBtn = document.getElementById('reverse-geocode-btn');
+        const mapContainer = document.getElementById('map');
+
+        let markers = [];
+        const MAX_ADDRESSES = 20;
+        let isReverseGeocodeMode = false;
+
+        // 2. Hjælpefunktioner
+        const showError = (message) => { errorMessage.textContent = message; };
+        const clearError = () => { errorMessage.textContent = ''; };
+
+        const updateAddButtonState = () => {
+            const limitReached = markers.length >= MAX_ADDRESSES;
+            addAddressBtn.disabled = limitReached;
+            addressInput.disabled = limitReached;
+            addressInput.placeholder = limitReached ? "Maksimalt antal adresser nået" : "f.eks. Rådhuspladsen 1, København";
+        };
+
+        // 3. Kern-funktionalitet
+        const addAddressToList = (displayName, coords) => {
+            const listItem = document.createElement('li');
+            listItem.className = 'flex justify-between items-center bg-gray-50 p-2 rounded-md gap-2';
+
+            const copyIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+            const checkIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="green" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+
+            listItem.innerHTML = `
+                <div class="flex-grow">
+                    <span class="text-gray-800 text-sm font-medium">${displayName}</span>
+                    <p class="text-gray-500 text-xs mt-1 font-mono">${coords[0]}, ${coords[1]}</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button class="copy-btn text-gray-500 hover:text-blue-600" title="Kopiér koordinater">${copyIconSVG}</button>
+                    <button class="center-btn text-blue-600 hover:text-blue-800" title="Centrér på kort"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></button>
+                </div>
+            `;
+
+            const copyButton = listItem.querySelector('.copy-btn');
+            copyButton.addEventListener('click', () => {
+                navigator.clipboard.writeText(`${coords[0]}, ${coords[1]}`).then(() => {
+                    copyButton.innerHTML = checkIconSVG;
+                    setTimeout(() => { copyButton.innerHTML = copyIconSVG; }, 2000);
+                });
+            });
+
+            listItem.querySelector('.center-btn').addEventListener('click', () => map.setView([coords[0], coords[1]], 15));
+            addressList.appendChild(listItem);
+            updateAddButtonState();
+        };
+
+        const clearMap = () => {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            addressList.innerHTML = '';
+            map.setView([56.2639, 9.5018], 7);
+            updateAddButtonState();
+            clearError();
+        };
+
+        const toggleReverseGeocodeMode = () => {
+            isReverseGeocodeMode = !isReverseGeocodeMode;
+            if (isReverseGeocodeMode) {
+                reverseGeocodeBtn.textContent = 'Annuller Valg';
+                reverseGeocodeBtn.classList.replace('bg-teal-600', 'bg-orange-600');
+                mapContainer.classList.add('leaflet-crosshair');
+                showError('Klik på kortet for at vælge et punkt.');
+            } else {
+                reverseGeocodeBtn.textContent = 'Vælg Punkt på Kort';
+                reverseGeocodeBtn.classList.replace('bg-orange-600', 'bg-teal-600');
+                mapContainer.classList.remove('leaflet-crosshair');
+                clearError();
+            }
+        };
+
+        const handleMapClick = async (e) => {
+            if (!isReverseGeocodeMode) return;
+            const { lat, lng } = e.latlng;
+            showError("Søger efter nærmeste adresse...");
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=da`);
+                const data = await response.json();
+                if (data && data.display_name) {
+                    addAddressToList(data.display_name, [data.lat, data.lon]);
+                    const marker = L.marker([data.lat, data.lon]).addTo(map).bindPopup(`<b>${data.display_name}</b>`).openPopup();
+                    markers.push(marker);
+                    map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.3));
+                    clearError();
+                } else {
+                    showError("Kunne ikke finde en adresse her.");
+                }
+            } catch (error) {
+                showError("Der opstod en netværksfejl.");
+            } finally {
+                toggleReverseGeocodeMode();
+            }
+        };
+
+        const addAddress = async () => {
+            const address = addressInput.value.trim();
+            if (!address) return showError("Indtast venligst en adresse.");
+            addAddressBtn.innerHTML = '<svg class="animate-spin h-5 w-5 text-white mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+            addAddressBtn.disabled = true;
+            try {
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`);
+                const data = await response.json();
+                if (data && data.length > 0) {
+                    const { lat, lon, display_name } = data[0];
+                    addAddressToList(display_name, [lat, lon]);
+                    const marker = L.marker([lat, lon]).addTo(map).bindPopup(`<b>${display_name}</b>`).openPopup();
+                    markers.push(marker);
+                    map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.3));
+                    addressInput.value = '';
+                    clearError();
+                } else {
+                    showError("Adressen kunne ikke findes. Prøv igen.");
+                }
+            } catch (error) {
+                showError("Der opstod en netværksfejl.");
+            } finally {
+                addAddressBtn.innerHTML = 'Tilføj';
+                updateAddButtonState();
+            }
+        };
+
+        // 4. Event Listeners
+        addAddressBtn.addEventListener('click', addAddress);
+        addressInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') addAddress(); });
+        clearMapBtn.addEventListener('click', clearMap);
+        reverseGeocodeBtn.addEventListener('click', toggleReverseGeocodeMode);
+        map.on('click', handleMapClick);
+
+        // 5. Initialisering
+        updateAddButtonState();
+    </script>
+</body>
+</html>
