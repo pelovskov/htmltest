@@ -40,6 +40,30 @@ Bemærk: Safari rydder ofte den slags hukommelse for filer åbnet direkte fra
 disken. Regn derfor ikke med den - tryk "Gem til fil", når du er færdig.
 
 
+DELING VIA GITHUB PAGES (eller et hvilket som helst websted)
+------------------------------------------------------------
+Filen kan lægges direkte i et repo og vises via GitHub Pages. Den ser efter,
+om den er åbnet fra din egen disk eller fra et websted:
+
+  Åbnet lokalt   -> ⚙️-knappen er der. Du kan rette og gemme.
+  Åbnet på nettet -> ⚙️-knappen er skjult. Ren opslagsside for de andre.
+
+Det er den samme fil begge steder - du skal ikke vedligeholde to udgaver.
+
+Arbejdsgang: læg filen i repo-mappen på din Mac, ret den dér, gem, og
+publicér med GitHub Desktop. GitHub Pages cacher ca. ti minutter, så en
+ændring slår ikke igennem for de andre med det samme.
+
+Vil du undtagelsesvis rette i den, mens den ligger på nettet, så sæt
+#rediger bag adressen og genindlæs:
+
+    https://ditnavn.github.io/dashboard/dashboard.html#rediger
+
+Så er ⚙️ fremme igen. Ændringerne kan stadig ikke gemmes på serveren -
+"Gem til fil" henter i stedet filen ned, og i Chrome kan du pege direkte
+på filen i din repo-mappe. Derefter er det bare en commit i GitHub Desktop.
+
+
 LINKS TIL LOKALE FILER
 ----------------------
 Fordi dashboardet selv ligger lokalt, kan du skrive relative stier i URL-feltet:
