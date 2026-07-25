@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="da"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lokalt Dashboard</title>
+<style>
+  :root{
+    --bg: #EAECEE;
+    --surface: #FFFFFF;
+    --ink: #131F27;
+    --header-bg: #1F2E36;
+    --header-ink: #FFFFFF;
+    --accent: #8A5A17;
+    --accent-soft: #F3E4C9;
+    --muted: #3F4C54;
+    --line: #BFC6CB;
+    --danger: #8E2C22;
+    --ok: #1F5D3A;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html,body{ margin:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size:19px;
+    line-height:1.45;
+  }
+  header{
+    background:var(--header-bg);
+    color:var(--header-ink);
+    padding: 34px 20px 28px;
+    text-align:center;
+  }
+  header h1{
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight:700;
+    font-size: clamp(1.9rem, 5vw, 2.6rem);
+    margin:0 0 8px;
+    letter-spacing:0.3px;
+  }
+  header p{ margin:0; color:#E4E6E2; font-size:1.05rem; }
+
+  .search-wrap{ max-width:720px; margin:-22px auto 0; padding:0 16px; position:relative; z-index:2; }
+  .search-box{ position:relative; }
+  #search{
+    width:100%; padding:14px 46px 14px 18px; font-size:1.1rem;
+    border-radius:999px; border:1px solid var(--line);
+    box-shadow:0 6px 18px rgba(0,0,0,0.12); outline:none;
+    background:var(--surface); color:var(--ink);
+  }
+  #search:focus{ border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  #search-clear{
+    display:none; position:absolute; top:50%; right:6px; transform:translateY(-50%);
+    width:36px; height:36px; border:none; background:transparent; color:var(--muted);
+    font-size:1.4rem; line-height:1; cursor:pointer; border-radius:50%;
+  }
+  #search-clear.visible{ display:block; }
+  #search-clear:hover, #search-clear:focus-visible{ background:var(--bg); color:var(--ink); outline:none; }
+
+  main{ max-width:960px; margin:0 auto; padding:24px 16px 90px; }
+  .filter-row{ display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+  .filter-row[hidden]{ display:none; }
+  .chip{
+    border:1px solid var(--line); background:var(--surface); color:var(--ink);
+    padding:9px 18px; border-radius:999px; font-size:1.02rem; cursor:pointer;
+    min-height:42px; font-family:inherit;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .chip.active{ background:var(--header-bg); color:var(--header-ink); border-color:var(--header-bg); }
+  .tag-chip{
+    border:1px dashed var(--line); background:transparent; color:var(--muted);
+    padding:7px 14px; border-radius:999px; font-size:0.95rem; cursor:pointer; font-family:inherit;
+  }
+  .tag-chip.active{ background:var(--accent-soft); color:#5C441E; border-color:var(--accent); }
+  .tag-section{ margin:4px 0 8px; }
+  .tag-toggle{
+    background:transparent; border:1px dashed var(--line); color:var(--muted);
+    padding:8px 16px; border-radius:999px; font-size:0.98rem; cursor:pointer; font-family:inherit;
+  }
+  .tag-toggle:hover, .tag-toggle:focus-visible{ border-color:var(--accent); color:var(--ink); outline:none; }
+
+  section.group{ margin-bottom:30px; }
+  .group-title{
+    display:flex; align-items:center; gap:8px; font-size:0.86rem;
+    text-transform:uppercase; letter-spacing:1.2px; color:var(--muted); margin:0 0 12px 4px;
+  }
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(230px, 1fr)); gap:14px; }
+  .card{
+    background:var(--surface); border-radius:var(--radius); padding:18px;
+    text-decoration:none; color:var(--ink); border:1px solid var(--line);
+    display:flex; flex-direction:column; gap:8px; min-height:88px; position:relative;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .card:hover, .card:focus-visible{ transform:translateY(-2px); box-shadow:0 8px 20px rgba(0,0,0,0.08); outline:none; }
+  .card:focus-visible{ box-shadow:0 0 0 3px var(--accent-soft), 0 8px 20px rgba(0,0,0,0.08); }
+  .card .titel{ font-weight:600; font-size:1.18rem; }
+  .card .tags{ display:flex; flex-wrap:wrap; gap:6px; }
+  .card .tags span{ font-size:0.85rem; background:var(--bg); color:var(--muted); padding:3px 9px; border-radius:999px; }
+  .pin-mark{ position:absolute; top:12px; right:14px; color:var(--accent); font-size:1rem; }
+  .titel-row{ display:flex; align-items:flex-start; gap:6px; }
+  .card-note-btn{
+    flex:0 0 auto; width:24px; height:24px; border:none; background:transparent; color:var(--muted);
+    font-size:0.95rem; line-height:1; cursor:pointer; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; opacity:.65; padding:0; margin-top:1px;
+  }
+  .card-note-btn:hover, .card-note-btn:focus-visible{ background:var(--bg); opacity:1; outline:none; }
+  .empty{ text-align:center; color:var(--muted); padding:40px 20px; }
+
+  /* Flydende knapper */
+  .fab-row{ position:fixed; right:18px; bottom:18px; display:flex; gap:10px; z-index:6; }
+  .fab{
+    width:54px; height:54px; border-radius:50%; background:var(--header-bg); color:var(--header-ink);
+    display:flex; align-items:center; justify-content:center; border:none;
+    font-size:1.3rem; cursor:pointer; box-shadow:0 6px 16px rgba(0,0,0,.25); font-family:inherit;
+  }
+  .fab.light{ background:var(--surface); color:var(--accent); border:1px solid var(--line); }
+  .fab.hidden{ display:none; }
+  .note-btn{ position:fixed; left:18px; bottom:18px; z-index:6; }
+  .fab.dirty{ background:var(--accent); color:#fff; }
+  .fab.dirty::after{
+    content:''; position:absolute; top:2px; right:2px; width:12px; height:12px;
+    border-radius:50%; background:#D64545; border:2px solid var(--bg);
+  }
+
+  /* Modal / paneler */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(19,31,39,.55);
+    z-index:20; align-items:center; justify-content:center; padding:20px;
+  }
+  .overlay.open{ display:flex; }
+  .box{
+    background:var(--surface); border-radius:var(--radius); max-width:520px; width:100%;
+    max-height:80vh; overflow-y:auto; padding:24px; position:relative;
+  }
+  .box.wide{ max-width:860px; max-height:92vh; padding:0; }
+  .box h2{ margin:0 0 14px; font-size:1.3rem; }
+  #note-text{ white-space:pre-wrap; margin:0; }
+  .modal-close{
+    position:absolute; top:14px; right:14px; width:36px; height:36px; border:none;
+    background:transparent; color:var(--muted); font-size:1.4rem; line-height:1; cursor:pointer; border-radius:50%;
+  }
+  .modal-close:hover, .modal-close:focus-visible{ background:var(--bg); color:var(--ink); outline:none; }
+
+  .panel-top{
+    position:sticky; top:0; background:var(--header-bg); color:var(--header-ink);
+    padding:16px 20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+    border-radius:var(--radius) var(--radius) 0 0; z-index:2;
+  }
+  .panel-top h2{ margin:0; font-size:1.25rem; flex:1 1 auto; color:var(--header-ink); }
+  .panel-body{ padding:22px 20px 30px; }
+  .panel-body h3{
+    font-size:0.9rem; text-transform:uppercase; letter-spacing:1.1px; color:var(--muted);
+    margin:30px 0 12px; padding-top:18px; border-top:1px solid var(--line);
+  }
+  .panel-body h3:first-child{ margin-top:0; padding-top:0; border-top:none; }
+
+  label{ display:block; font-size:0.95rem; color:var(--muted); margin:14px 0 5px; }
+  input[type=text], input[type=url], textarea, select{
+    width:100%; padding:11px 13px; font-size:1rem; font-family:inherit;
+    border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink);
+  }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  textarea{ resize:vertical; }
+  .checkline{ display:flex; align-items:center; gap:10px; margin:16px 0; }
+  .checkline input{ width:22px; height:22px; }
+  .checkline label{ margin:0; color:var(--ink); font-size:1rem; }
+
+  button.btn{
+    font-family:inherit; font-size:1rem; padding:11px 18px; border-radius:10px;
+    border:1px solid var(--header-bg); background:var(--header-bg); color:#fff; cursor:pointer;
+  }
+  button.btn.secondary{ background:var(--surface); color:var(--ink); border-color:var(--line); }
+  button.btn.gem{ background:var(--accent); border-color:var(--accent); }
+  button.btn.danger{ background:var(--surface); color:var(--danger); border-color:var(--danger); }
+  button.btn.small{ padding:7px 12px; font-size:0.9rem; }
+  button.btn:disabled{ opacity:.4; cursor:default; }
+  .btn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+
+  .liste{ display:flex; flex-direction:column; gap:8px; }
+  .rk{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border:1px solid var(--line); border-radius:10px; background:var(--surface);
+  }
+  .rk .nav{ display:flex; flex-direction:column; gap:2px; }
+  .rk .nav button{
+    width:30px; height:22px; font-size:0.8rem; line-height:1; padding:0;
+    border:1px solid var(--line); background:var(--bg); color:var(--ink); border-radius:6px; cursor:pointer;
+  }
+  .rk .nav button:disabled{ opacity:.3; cursor:default; }
+  .rk .txt{ flex:1 1 auto; min-width:0; }
+  .rk .txt b{ display:block; font-weight:600; font-size:1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rk .txt small{ color:var(--muted); font-size:0.85rem; }
+  .rk .akt{ display:flex; gap:6px; flex-shrink:0; }
+  .rk.redigeres{ border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-soft); }
+
+  .hint{ font-size:0.92rem; color:var(--muted); margin:8px 0 0; }
+  .status{
+    padding:10px 14px; border-radius:10px; font-size:0.95rem; margin:14px 0 0;
+    background:var(--accent-soft); color:#5C441E; display:none;
+  }
+  .status.vis{ display:block; }
+  .status.fejl{ background:#F6DAD6; color:var(--danger); }
+  .status.ok{ background:#D9EBDF; color:var(--ok); }
+
+  .toast{
+    position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(30px);
+    background:var(--header-bg); color:#fff; padding:13px 22px; border-radius:999px;
+    font-size:1rem; box-shadow:0 8px 24px rgba(0,0,0,.3); opacity:0; pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease; z-index:40; max-width:90vw; text-align:center;
+  }
+  .toast.vis{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:600px){
+    .box.wide{ max-height:100vh; border-radius:0; }
+    .overlay{ padding:0; }
+    .rk{ flex-wrap:wrap; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .card, .toast{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<script id="app-data" type="application/json">
+{
+  "titel": "Lokalt Dashboard",
+  "undertitel": "Alle links, ét sted",
+  "note": "Vi arbejder på højtryk",
+  "links": [
+    {
+      "id": "c3d4e5f6",
+      "titel": "Ebogsgenerator",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/xxx/ebog-generator%20(1).html",
+      "emne": "Bogbygger",
+      "tags": [
+        "ebog",
+        "html",
+        "markdown"
+      ],
+      "pinned": true,
+      "kilde": "Lydsager",
+      "note": "Smart system, som fungerer med bare én htmlfil.",
+      "billede": ""
+    },
+    {
+      "id": "b8c9d0e1",
+      "titel": "Audiorecorder - 1",
+      "url": "https://apps.rkroskilde.dk/wa/recorder/",
+      "emne": "Røde Kors",
+      "tags": [
+        "lyd",
+        "optager"
+      ],
+      "pinned": false,
+      "kilde": "Lydsager",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "0bf3fa0f",
+      "titel": "QR Kodegenerator",
+      "url": "https://sfbbilleder.eu/over/pel/qr/qr-gen1.html",
+      "emne": "Webtools",
+      "tags": [
+        "qr"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "e1f1dd25",
+      "titel": "Dynamiske QR koder - sfb",
+      "url": "https://sfbbilleder.eu/over/go/admin.php",
+      "emne": "Webtools",
+      "tags": [
+        "qr"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "cb7872b4",
+      "titel": "Løvskov Ûber Dashboard",
+      "url": "https://sfbbilleder.eu/over/pel/dashboards/db0000/",
+      "emne": "Links",
+      "tags": [
+        "dashboard",
+        "über"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "Alt skal flyttes over.",
+      "billede": ""
+    },
+    {
+      "id": "5d3b907e",
+      "titel": "Udviklingsmiljø",
+      "url": "https://apps.rkroskilde.dk/wa/index.php",
+      "emne": "Webtools",
+      "tags": [
+        "tools"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "f59a657a",
+      "titel": "Løvskov Lydsager",
+      "url": "https://apps.rkroskilde.dk/wa/dashboards/04/index.html",
+      "emne": "",
+      "tags": [],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "c1d29d67",
+      "titel": "Roskildebilleder",
+      "url": "https://sfbbilleder.eu",
+      "emne": "Syd for Banen",
+      "tags": [
+        "galleri",
+        "piwigo"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "721ea6a2",
+      "titel": "Musicon Guiden",
+      "url": "https://sfbbilleder.eu/over/musicon/musicon-guiden.html",
+      "emne": "Syd for Banen",
+      "tags": [
+        "musicon"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "a4a36d42",
+      "titel": "Kilder i Roskilde",
+      "url": "https://sfbbilleder.eu/over/pel/kilder2/index.html",
+      "emne": "Syd for Banen",
+      "tags": [
+        "kilder",
+        "chat",
+        "interaktivt kort"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "e74c0267",
+      "titel": "Lydtemaer",
+      "url": "https://sfbbilleder.eu/over/pel/a-lydfort/tema-katalog.php",
+      "emne": "Lydfortællinger",
+      "tags": [
+        "lydfortællinger",
+        "podcast"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "ddc0c4c4",
+      "titel": "Lydfortællinger Katalog",
+      "url": "https://apps.rkroskilde.dk/wa/lydfortaellinger-katalog/",
+      "emne": "Lydfortællinger",
+      "tags": [
+        "katalog",
+        "lydfortællinger",
+        "minipodcast"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "8b8afdfb",
+      "titel": "Lydfortælling Builder",
+      "url": "https://apps.rkroskilde.dk/wa/lydfortaellinger-katalog/lyd-fort.html",
+      "emne": "Lydfortællinger",
+      "tags": [
+        "lydfortællinger"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "60065486",
+      "titel": "Bogbygger",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/xxx/ebog-generator%20(1).html",
+      "emne": "Ebøger",
+      "tags": [
+        "ebøger",
+        "webtool"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "2097e9df",
+      "titel": "Glemte Butikker",
+      "url": "https://sfbbilleder.eu/over/z/butik-maj-2026/index.html",
+      "emne": "Glemte Butikker",
+      "tags": [
+        "butikker"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "Alt skal flyttes over i det nye system.",
+      "billede": ""
+    },
+    {
+      "id": "e6665ce6",
+      "titel": "Fotosafari & Camp Snap",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Fotosafari/fotosafari_camp_snap_dashboard.html#comparison",
+      "emne": "Syd for Banen",
+      "tags": [
+        "fotosafari",
+        "camp snap"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "6ec045d6",
+      "titel": "Fotosafari - præs",
+      "url": "https://canva.link/e2q9uhduzaw01nv",
+      "emne": "Syd for Banen",
+      "tags": [
+        "fotosafari",
+        "camp snap"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "4da2a6ec",
+      "titel": "Fotosafari-Dash-v. 2",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Fotosafari/fotosafari_dashboard.html",
+      "emne": "Syd for Banen",
+      "tags": [
+        "fotosafari",
+        "camp snap"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "b2eb9531",
+      "titel": "Fotosari - Fotolab",
+      "url": "https://sfbbilleder.eu/over/pel/pic/fotolab.php",
+      "emne": "Syd for Banen",
+      "tags": [
+        "fotosafari",
+        "camp snap"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "ab67773e",
+      "titel": "Readme Lydfortællinger - Katalog",
+      "url": "https://apps.rkroskilde.dk/wa/lydfortaellinger-katalog/readme.html",
+      "emne": "Lydfortællinger",
+      "tags": [
+        "katalog",
+        "readme"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "67ddf87b",
+      "titel": "Ksnip",
+      "url": "https://sfbbilleder.eu/over/pel/ksnip/index.html",
+      "emne": "Syd for Banen",
+      "tags": [
+        "billedupload"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "49f9c2c9",
+      "titel": "Fotosari Galleri",
+      "url": "https://sfbbilleder.eu/over/pel/pic/galleri.php",
+      "emne": "Syd for Banen",
+      "tags": [
+        "fotosafari",
+        "fotolab"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "14c465d1",
+      "titel": "Grafisk Fotoguide",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Fotosafari/grafisk_foto_lynguide.html",
+      "emne": "Fotosafari",
+      "tags": [
+        "fotoguide"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "2c70b700",
+      "titel": "Piwigo album-udtræk",
+      "url": "https://sfbbilleder.eu/piwigo-album-udtraek.html",
+      "emne": "Piwigo",
+      "tags": [
+        "syd for banen",
+        "statisk galleri"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "74186ee3",
+      "titel": "Piwigo - Statisk album",
+      "url": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Piwigo-sager/-1-piwigo-galleri-generator.html",
+      "emne": "Piwigo",
+      "tags": [
+        "galleri",
+        "arkiv"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "19506f63",
+      "titel": "Poloraidlab",
+      "url": "https://sfbbilleder.eu/over/pel/pic/polaroid.php",
+      "emne": "Fotosafari",
+      "tags": [
+        "poloraid"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "id": "9cc3e15e",
+      "titel": "Poloraidlab - 2",
+      "url": "https://sfbbilleder.eu/over/pel/pic/polaroid2.php",
+      "emne": "Fotosafari",
+      "tags": [
+        "poloraid",
+        "fotolab"
+      ],
+      "pinned": false,
+      "kilde": "",
+      "note": "",
+      "billede": ""
+    },
+    {
+      "titel": "Klapskalle Ejnar",
+      "url": "https://sfbbilleder.eu",
+      "emne": "Syd for Banen",
+      "tags": [
+        "billeder",
+        "foto"
+      ],
+      "note": "",
+      "kilde": "",
+      "pinned": true,
+      "id": "15159167",
+      "billede": ""
+    }
+  ]
+}
+</script>
+
+<header>
+  <h1 id="h-titel">Lokalt Dashboard</h1>
+  <p id="h-under">Alle links, ét sted</p>
+</header>
+
+<div class="search-wrap">
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Søg efter titel eller tag …" autocomplete="off">
+    <button type="button" id="search-clear" aria-label="Ryd søgning">×</button>
+  </div>
+</div>
+
+<main>
+  <div class="filter-row" id="emne-filter"></div>
+  <div class="tag-section">
+    <button type="button" id="tag-toggle" class="tag-toggle" aria-expanded="false">+ Tags</button>
+    <div class="filter-row" id="tag-filter" hidden=""></div>
+  </div>
+
+  <section class="group" id="pinned-group" style="display:none;">
+    <div class="group-title">📌 Fastgjort</div>
+    <div class="cards" id="pinned-cards"></div>
+  </section>
+
+  <div id="results"></div>
+</main>
+
+<button type="button" id="note-btn" class="fab light note-btn hidden" title="Fælles note">📝</button>
+
+<div class="fab-row">
+  <button type="button" id="save-fab" class="fab hidden" title="Gem til fil">💾</button>
+  <button type="button" id="edit-fab" class="fab" title="Rediger">⚙️</button>
+</div>
+
+<!-- Note-visning -->
+<div class="overlay" id="note-overlay">
+  <div class="box">
+    <button type="button" class="modal-close" id="note-close" aria-label="Luk">×</button>
+    <h2 id="note-titel">Note</h2>
+    <p id="note-text"></p>
+  </div>
+</div>
+
+<!-- Redigeringspanel -->
+<div class="overlay" id="edit-overlay">
+  <div class="box wide">
+    <div class="panel-top">
+      <h2>Rediger dashboard</h2>
+      <button type="button" class="btn gem" id="gem-btn">Gem til fil</button>
+      <button type="button" class="btn secondary" id="edit-close">Luk</button>
+    </div>
+    <div class="panel-body">
+
+      <h3 id="form-overskrift">Tilføj link</h3>
+      <label for="f-titel">Titel</label>
+      <input type="text" id="f-titel" autocomplete="off">
+      <label for="f-url">URL eller filsti</label>
+      <input type="text" id="f-url" autocomplete="off" placeholder="https://… eller ../mappe/index.html">
+      <label for="f-emne">Emne</label>
+      <input type="text" id="f-emne" list="emne-liste" autocomplete="off">
+      <datalist id="emne-liste"></datalist>
+      <label for="f-tags">Tags (adskilt med komma)</label>
+      <input type="text" id="f-tags" autocomplete="off">
+      <label for="f-note">Note</label>
+      <textarea id="f-note" rows="3"></textarea>
+      <label for="f-kilde">Kilde (kun til dig selv)</label>
+      <input type="text" id="f-kilde" autocomplete="off">
+      <div class="checkline">
+        <input type="checkbox" id="f-pinned">
+        <label for="f-pinned">Fastgør øverst</label>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn" id="f-gem">Tilføj link</button>
+        <button type="button" class="btn secondary" id="f-annuller" style="display:none;">Annullér</button>
+      </div>
+      <div class="status" id="f-status"></div>
+
+      <h3>Links (<span id="antal">0</span>)</h3>
+      <div class="liste" id="liste"></div>
+
+      <h3>Dashboardets tekster</h3>
+      <label for="s-titel">Overskrift</label>
+      <input type="text" id="s-titel">
+      <label for="s-under">Undertekst</label>
+      <input type="text" id="s-under">
+      <label for="s-note">Fælles note (vises via 📝 nederst til venstre)</label>
+      <textarea id="s-note" rows="4"></textarea>
+
+      <h3>Data</h3>
+      <div class="btn-row">
+        <button type="button" class="btn secondary" id="eksport-btn">Hent links.json</button>
+        <button type="button" class="btn secondary" id="import-btn">Indlæs links.json …</button>
+        <input type="file" id="import-fil" accept=".json,application/json" style="display:none;">
+      </div>
+      <p class="hint">links.json bruger samme format som PHP-udgaven, så du kan flytte data begge veje.</p>
+      <div class="status" id="d-status"></div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* Skabelonen fanges FØR siden ændres, så filen kan gendannes 1:1 ved gem */
+  var TEMPLATE = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+
+  var LS_KEY = "lokalt-dashboard-kladde";
+
+  var data = { titel:"Lokalt Dashboard", undertitel:"Alle links, ét sted", note:"", links:[] };
+  var dirty = false;
+  var redigerId = null;
+  var activeEmne = "Alle";
+  var activeTag = null;
+  var tagsUdfoldet = false;
+  var filHandle = null;
+
+  /* ---------- hjælpere ---------- */
+  function esc(s){
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function nyId(){
+    return Math.random().toString(16).slice(2,10);
+  }
+  function normTags(s){
+    if (Array.isArray(s)) s = s.join(",");
+    return String(s||"").split(",").map(function(t){ return t.trim().toLowerCase(); })
+      .filter(function(t,i,a){ return t && a.indexOf(t)===i; });
+  }
+  function toast(besked){
+    var t = document.getElementById("toast");
+    t.textContent = besked;
+    t.classList.add("vis");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function(){ t.classList.remove("vis"); }, 2600);
+  }
+  function vis(elId, besked, type){
+    var e = document.getElementById(elId);
+    e.textContent = besked;
+    e.className = "status vis" + (type ? " " + type : "");
+    clearTimeout(e._t);
+    e._t = setTimeout(function(){ e.className = "status"; }, 6000);
+  }
+  function saetDirty(v){
+    dirty = v;
+    var f = document.getElementById("save-fab");
+    f.classList.toggle("hidden", !v);
+    f.classList.toggle("dirty", v);
+    document.getElementById("gem-btn").textContent = v ? "Gem til fil •" : "Gem til fil";
+    if (v) gemKladde();
+  }
+  function gemKladde(){
+    try { localStorage.setItem(LS_KEY, JSON.stringify({ tid: Date.now(), data: data })); } catch(e){}
+  }
+  function rydKladde(){
+    try { localStorage.removeItem(LS_KEY); } catch(e){}
+  }
+
+  /* ---------- indlæsning ---------- */
+  function laesIndlejret(){
+    try {
+      var raw = document.getElementById("app-data").textContent;
+      var d = JSON.parse(raw);
+      if (Array.isArray(d)) d = { titel:"Lokalt Dashboard", undertitel:"Alle links, ét sted", note:"", links:d };
+      data.titel = d.titel || "Lokalt Dashboard";
+      data.undertitel = d.undertitel || "";
+      data.note = d.note || "";
+      data.links = (d.links||[]).map(ryd);
+    } catch(e){
+      alert("Kunne ikke læse data i filen. Den indbyggede datablok ser forkert ud.");
+    }
+  }
+  function ryd(l){
+    l = l || {};
+    return {
+      id: l.id || nyId(),
+      titel: l.titel || "",
+      url: l.url || "",
+      emne: l.emne || "",
+      tags: normTags(l.tags),
+      pinned: !!l.pinned,
+      kilde: l.kilde || "",
+      note: l.note || "",
+      billede: l.billede || ""
+    };
+  }
+  function tjekKladde(){
+    var raw = null;
+    try { raw = localStorage.getItem(LS_KEY); } catch(e){ return; }
+    if (!raw) return;
+    try {
+      var k = JSON.parse(raw);
+      if (!k || !k.data || JSON.stringify(k.data) === JSON.stringify(data)) { rydKladde(); return; }
+      var tid = new Date(k.tid).toLocaleString("da-DK");
+      if (confirm("Der ligger ugemte ændringer fra " + tid + " i denne browser.\n\nVil du hente dem frem?\n\nOK = hent ændringerne\nAnnullér = kassér dem og brug filens indhold")) {
+        data = k.data;
+        data.links = (data.links||[]).map(ryd);
+        saetDirty(true);
+      } else {
+        rydKladde();
+      }
+    } catch(e){ rydKladde(); }
+  }
+
+  /* ---------- visning ---------- */
+  function tegnHoved(){
+    document.getElementById("h-titel").textContent = data.titel;
+    document.getElementById("h-under").textContent = data.undertitel;
+    document.title = data.titel;
+    document.getElementById("note-btn").classList.toggle("hidden", !(data.note||"").trim());
+  }
+  function tegnEmner(){
+    var emner = ["Alle"];
+    data.links.forEach(function(l){ if (l.emne && emner.indexOf(l.emne) < 0) emner.push(l.emne); });
+    emner = [emner[0]].concat(emner.slice(1).sort(function(a,b){ return a.localeCompare(b,"da"); }));
+    if (emner.indexOf(activeEmne) < 0) activeEmne = "Alle";
+    var wrap = document.getElementById("emne-filter");
+    wrap.innerHTML = "";
+    emner.forEach(function(e){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (e === activeEmne ? " active" : "");
+      b.textContent = e;
+      b.onclick = function(){ activeEmne = e; tegnEmner(); tegnKort(); };
+      wrap.appendChild(b);
+    });
+  }
+  function tegnTags(){
+    var tags = [];
+    data.links.forEach(function(l){ l.tags.forEach(function(t){ if (tags.indexOf(t) < 0) tags.push(t); }); });
+    tags.sort(function(a,b){ return a.localeCompare(b,"da"); });
+    if (activeTag && tags.indexOf(activeTag) < 0) activeTag = null;
+    var wrap = document.getElementById("tag-filter");
+    wrap.innerHTML = "";
+    tags.forEach(function(t){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "tag-chip" + (t === activeTag ? " active" : "");
+      b.textContent = "#" + t;
+      b.onclick = function(){ activeTag = (activeTag === t) ? null : t; tegnTags(); tegnKort(); };
+      wrap.appendChild(b);
+    });
+  }
+  function passer(l, q){
+    if (activeEmne !== "Alle" && l.emne !== activeEmne) return false;
+    if (activeTag && l.tags.indexOf(activeTag) < 0) return false;
+    if (q){
+      var h = (l.titel + " " + l.tags.join(" ") + " " + (l.note||"")).toLowerCase();
+      if (h.indexOf(q) < 0) return false;
+    }
+    return true;
+  }
+  function kortHTML(l){
+    var tags = l.tags.map(function(t){ return "<span>#" + esc(t) + "</span>"; }).join("");
+    var pin = l.pinned ? '<span class="pin-mark">📌</span>' : "";
+    var nb = (l.note||"").trim()
+      ? '<button type="button" class="card-note-btn" data-note-id="' + esc(l.id) + '" title="Vis note" aria-label="Vis note">📝</button>'
+      : "";
+    return '<a class="card" href="' + esc(l.url) + '" target="_blank" rel="noopener">' +
+      pin +
+      '<div class="titel-row">' + nb + '<span class="titel">' + esc(l.titel) + "</span></div>" +
+      '<div class="tags">' + tags + "</div></a>";
+  }
+  function tegnKort(){
+    var q = document.getElementById("search").value.trim().toLowerCase();
+    var synlige = data.links.filter(function(l){ return passer(l, q); });
+    var pinned = synlige.filter(function(l){ return l.pinned; });
+    var rest = synlige.filter(function(l){ return !l.pinned; });
+
+    var pg = document.getElementById("pinned-group");
+    if (pinned.length){
+      pg.style.display = "";
+      document.getElementById("pinned-cards").innerHTML = pinned.map(kortHTML).join("");
+    } else { pg.style.display = "none"; }
+
+    var r = document.getElementById("results");
+    if (!synlige.length){
+      r.innerHTML = data.links.length
+        ? '<p class="empty">Intet matcher din søgning.</p>'
+        : '<p class="empty">Ingen links endnu. Tryk på ⚙️ nederst til højre for at tilføje det første.</p>';
+      return;
+    }
+    r.innerHTML = rest.length ? '<div class="cards">' + rest.map(kortHTML).join("") + "</div>" : "";
+  }
+  function tegnAlt(){ tegnHoved(); tegnEmner(); tegnTags(); tegnKort(); }
+
+  /* ---------- redigering ---------- */
+  function tegnListe(){
+    var liste = document.getElementById("liste");
+    document.getElementById("antal").textContent = data.links.length;
+    liste.innerHTML = "";
+    if (!data.links.length){
+      liste.innerHTML = '<p class="hint">Listen er tom. Udfyld felterne ovenfor og tryk “Tilføj link”.</p>';
+      return;
+    }
+    data.links.forEach(function(l, i){
+      var rk = document.createElement("div");
+      rk.className = "rk" + (l.id === redigerId ? " redigeres" : "");
+      var under = [l.emne || "uden emne"];
+      if (l.tags.length) under.push(l.tags.map(function(t){ return "#" + t; }).join(" "));
+      if (l.pinned) under.push("📌");
+      rk.innerHTML =
+        '<div class="nav">' +
+          '<button type="button" data-op="up" ' + (i === 0 ? "disabled" : "") + ' title="Flyt op">▲</button>' +
+          '<button type="button" data-op="down" ' + (i === data.links.length-1 ? "disabled" : "") + ' title="Flyt ned">▼</button>' +
+        "</div>" +
+        '<div class="txt"><b>' + esc(l.titel || "(uden titel)") + "</b><small>" + esc(under.join(" · ")) + "</small></div>" +
+        '<div class="akt">' +
+          '<button type="button" class="btn secondary small" data-op="edit">Rediger</button>' +
+          '<button type="button" class="btn danger small" data-op="del">Slet</button>' +
+        "</div>";
+      rk.addEventListener("click", function(ev){
+        var b = ev.target.closest("button[data-op]");
+        if (!b) return;
+        var op = b.dataset.op;
+        if (op === "up" && i > 0){ byt(i, i-1); }
+        else if (op === "down" && i < data.links.length-1){ byt(i, i+1); }
+        else if (op === "edit"){ hentTilForm(l); }
+        else if (op === "del"){
+          if (confirm("Slet “" + (l.titel||"linket") + "”?")){
+            data.links.splice(i,1);
+            if (redigerId === l.id) nulstilForm();
+            saetDirty(true); tegnListe(); tegnAlt();
+          }
+        }
+      });
+      liste.appendChild(rk);
+    });
+  }
+  function byt(a,b){
+    var t = data.links[a]; data.links[a] = data.links[b]; data.links[b] = t;
+    saetDirty(true); tegnListe(); tegnAlt();
+  }
+  function hentTilForm(l){
+    redigerId = l.id;
+    document.getElementById("f-titel").value = l.titel;
+    document.getElementById("f-url").value = l.url;
+    document.getElementById("f-emne").value = l.emne;
+    document.getElementById("f-tags").value = l.tags.join(", ");
+    document.getElementById("f-note").value = l.note;
+    document.getElementById("f-kilde").value = l.kilde;
+    document.getElementById("f-pinned").checked = l.pinned;
+    document.getElementById("form-overskrift").textContent = "Rediger link";
+    document.getElementById("f-gem").textContent = "Gem link";
+    document.getElementById("f-annuller").style.display = "";
+    tegnListe();
+    document.getElementById("f-titel").focus();
+    document.querySelector("#edit-overlay .box").scrollTop = 0;
+  }
+  function nulstilForm(){
+    redigerId = null;
+    ["f-titel","f-url","f-emne","f-tags","f-note","f-kilde"].forEach(function(id){ document.getElementById(id).value = ""; });
+    document.getElementById("f-pinned").checked = false;
+    document.getElementById("form-overskrift").textContent = "Tilføj link";
+    document.getElementById("f-gem").textContent = "Tilføj link";
+    document.getElementById("f-annuller").style.display = "none";
+    tegnListe();
+  }
+  function gemForm(){
+    var titel = document.getElementById("f-titel").value.trim();
+    var url = document.getElementById("f-url").value.trim();
+    if (!titel){ vis("f-status","Skriv en titel.","fejl"); return; }
+    if (!url){ vis("f-status","Skriv en URL eller filsti.","fejl"); return; }
+    var felter = {
+      titel: titel,
+      url: url,
+      emne: document.getElementById("f-emne").value.trim(),
+      tags: normTags(document.getElementById("f-tags").value),
+      note: document.getElementById("f-note").value.trim(),
+      kilde: document.getElementById("f-kilde").value.trim(),
+      pinned: document.getElementById("f-pinned").checked
+    };
+    if (redigerId){
+      var l = data.links.filter(function(x){ return x.id === redigerId; })[0];
+      if (l) for (var k in felter) l[k] = felter[k];
+      vis("f-status","Linket er rettet. Husk “Gem til fil”.","ok");
+    } else {
+      felter.id = nyId(); felter.billede = "";
+      data.links.push(felter);
+      vis("f-status","Linket er tilføjet. Husk “Gem til fil”.","ok");
+    }
+    saetDirty(true);
+    nulstilForm();
+    opdaterEmneListe();
+    tegnAlt();
+  }
+  function opdaterEmneListe(){
+    var dl = document.getElementById("emne-liste");
+    var set = [];
+    data.links.forEach(function(l){ if (l.emne && set.indexOf(l.emne) < 0) set.push(l.emne); });
+    dl.innerHTML = set.sort().map(function(e){ return '<option value="' + esc(e) + '">'; }).join("");
+  }
+
+  /* ---------- gem til fil ---------- */
+  function byggFil(){
+    var json = JSON.stringify({
+      titel: data.titel, undertitel: data.undertitel, note: data.note, links: data.links
+    }, null, 2).replace(/<\//g, "<\\/");
+    return TEMPLATE.replace(
+      /(<script id="app-data" type="application\/json">)[\s\S]*?(<\/script>)/,
+      function(m, a, b){ return a + "\n" + json + "\n" + b; }
+    );
+  }
+  function filnavn(){
+    var n = (location.pathname.split("/").pop() || "").split("?")[0];
+    try { n = decodeURIComponent(n); } catch(e){}
+    return n || "dashboard.html";
+  }
+  async function gemTilFil(){
+    var html = byggFil();
+    if (html.indexOf('id="app-data"') < 0){
+      vis("d-status","Kunne ikke bygge filen. Gem i stedet dine data med “Hent links.json”.","fejl");
+      return;
+    }
+    var blob = new Blob([html], {type:"text/html;charset=utf-8"});
+
+    if (window.showSaveFilePicker){
+      try {
+        if (!filHandle){
+          filHandle = await window.showSaveFilePicker({
+            suggestedName: filnavn(),
+            types: [{ description:"HTML-fil", accept:{"text/html":[".html"]} }]
+          });
+        }
+        var w = await filHandle.createWritable();
+        await w.write(blob);
+        await w.close();
+        saetDirty(false); rydKladde();
+        toast("Gemt i filen");
+        return;
+      } catch(e){
+        if (e && e.name === "AbortError") return;
+        filHandle = null;
+      }
+    }
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filnavn();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    saetDirty(false); rydKladde();
+    vis("d-status","Filen er hentet til din Overførsler-mappe. Læg den oven i den gamle fil, så er ændringerne permanente.","ok");
+    toast("Fil hentet — læg den oven i den gamle");
+  }
+
+  /* ---------- import / eksport ---------- */
+  function eksporter(){
+    var json = JSON.stringify(data.links, null, 4);
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json], {type:"application/json"}));
+    a.download = "links.json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+    vis("d-status","links.json er hentet.","ok");
+  }
+  function importer(fil){
+    var r = new FileReader();
+    r.onload = function(){
+      var d;
+      try { d = JSON.parse(r.result); }
+      catch(e){ vis("d-status","Filen kunne ikke læses som JSON.","fejl"); return; }
+      var nye = Array.isArray(d) ? d : (d && Array.isArray(d.links) ? d.links : null);
+      if (!nye){ vis("d-status","Filen indeholder ikke en liste af links.","fejl"); return; }
+      nye = nye.map(ryd);
+      var svar = confirm(nye.length + " links fundet.\n\nOK = erstat de nuværende " + data.links.length + " links\nAnnullér = læg dem til i stedet");
+      if (svar) data.links = nye;
+      else {
+        var kendte = data.links.map(function(l){ return l.id; });
+        nye.forEach(function(l){ if (kendte.indexOf(l.id) >= 0) l.id = nyId(); data.links.push(l); });
+      }
+      if (!Array.isArray(d) && d){
+        if (d.titel) data.titel = d.titel;
+        if (d.undertitel) data.undertitel = d.undertitel;
+        if (d.note) data.note = d.note;
+        laesIndstillingerTilForm();
+      }
+      saetDirty(true); opdaterEmneListe(); tegnListe(); tegnAlt();
+      vis("d-status","Indlæst. Husk “Gem til fil”.","ok");
+    };
+    r.readAsText(fil);
+  }
+  function laesIndstillingerTilForm(){
+    document.getElementById("s-titel").value = data.titel;
+    document.getElementById("s-under").value = data.undertitel;
+    document.getElementById("s-note").value = data.note;
+  }
+
+  /* ---------- hændelser ---------- */
+  var soeg = document.getElementById("search");
+  var ryd_ = document.getElementById("search-clear");
+  function opdaterRyd(){ ryd_.classList.toggle("visible", soeg.value.length > 0); }
+  soeg.addEventListener("input", function(){ opdaterRyd(); tegnKort(); });
+  ryd_.addEventListener("click", function(){ soeg.value = ""; opdaterRyd(); soeg.focus(); tegnKort(); });
+
+  var tagToggle = document.getElementById("tag-toggle");
+  tagToggle.addEventListener("click", function(){
+    tagsUdfoldet = !tagsUdfoldet;
+    document.getElementById("tag-filter").hidden = !tagsUdfoldet;
+    tagToggle.textContent = tagsUdfoldet ? "− Tags" : "+ Tags";
+    tagToggle.setAttribute("aria-expanded", String(tagsUdfoldet));
+  });
+
+  var noteOverlay = document.getElementById("note-overlay");
+  document.getElementById("note-btn").addEventListener("click", function(){
+    document.getElementById("note-titel").textContent = "Note";
+    document.getElementById("note-text").textContent = data.note;
+    noteOverlay.classList.add("open");
+  });
+  document.getElementById("note-close").addEventListener("click", function(){ noteOverlay.classList.remove("open"); });
+  noteOverlay.addEventListener("click", function(e){ if (e.target === noteOverlay) noteOverlay.classList.remove("open"); });
+  document.addEventListener("click", function(e){
+    var b = e.target.closest(".card-note-btn");
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var l = data.links.filter(function(x){ return x.id === b.dataset.noteId; })[0];
+    if (l){
+      document.getElementById("note-titel").textContent = l.titel;
+      document.getElementById("note-text").textContent = l.note;
+      noteOverlay.classList.add("open");
+    }
+  });
+
+  var editOverlay = document.getElementById("edit-overlay");
+  function aabnEdit(){
+    laesIndstillingerTilForm();
+    opdaterEmneListe();
+    tegnListe();
+    editOverlay.classList.add("open");
+  }
+  document.getElementById("edit-fab").addEventListener("click", aabnEdit);
+  document.getElementById("edit-close").addEventListener("click", function(){ editOverlay.classList.remove("open"); });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape"){
+      noteOverlay.classList.remove("open");
+      editOverlay.classList.remove("open");
+    }
+  });
+
+  document.getElementById("f-gem").addEventListener("click", gemForm);
+  document.getElementById("f-annuller").addEventListener("click", nulstilForm);
+
+  ["s-titel","s-under","s-note"].forEach(function(id){
+    document.getElementById(id).addEventListener("input", function(){
+      data.titel = document.getElementById("s-titel").value.trim() || "Lokalt Dashboard";
+      data.undertitel = document.getElementById("s-under").value;
+      data.note = document.getElementById("s-note").value;
+      saetDirty(true); tegnHoved();
+    });
+  });
+
+  document.getElementById("gem-btn").addEventListener("click", gemTilFil);
+  document.getElementById("save-fab").addEventListener("click", gemTilFil);
+  document.getElementById("eksport-btn").addEventListener("click", eksporter);
+  document.getElementById("import-btn").addEventListener("click", function(){ document.getElementById("import-fil").click(); });
+  document.getElementById("import-fil").addEventListener("change", function(e){
+    if (e.target.files && e.target.files[0]) importer(e.target.files[0]);
+    e.target.value = "";
+  });
+
+  window.addEventListener("beforeunload", function(e){
+    if (dirty){ e.preventDefault(); e.returnValue = ""; }
+  });
+
+  /* ---------- start ---------- */
+  laesIndlejret();
+  tjekKladde();
+  tegnAlt();
+  opdaterRyd();
+})();
+</script></body></html>
