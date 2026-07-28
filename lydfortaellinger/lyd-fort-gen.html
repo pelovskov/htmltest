@@ -218,6 +218,15 @@
   <div class="form-pane">
 
     <div class="field">
+      <label for="loadPlayer">Indlæs eksisterende afspiller (valgfri)</label>
+      <div class="filebox">
+        <input type="file" id="loadPlayer" accept=".html,text/html">
+        <div class="status pending" id="loadStatus">Ingen fil valgt</div>
+      </div>
+      <div class="hint">Vælg en tidligere genereret afspiller-fil (.html) for at hente den ind i formularen og redigere den videre. Filer genereret med denne udgave af værktøjet indlæses fuldstændigt; ældre filer kan mangle den oprindelige Markdown-tekst i beskrivelsen.</div>
+    </div>
+
+    <div class="field">
       <label>Tema</label>
       <div class="theme-picker" id="themePicker">
         <label class="theme-option selected" data-theme="original" style="--theme-accent:#9A4630">
@@ -489,6 +498,15 @@ function buildPlayerHTML(s){
     : '';
   const audioSrc = s.audioDataUrl || '';
   const pageTitle = s.title || 'Lydfortælling';
+  const safeName = (s.title || 'lydfortaelling').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') || 'lydfortaelling';
+  const sourceData = {
+    eyebrow: s.eyebrow || '', title: s.title || '', location: s.location || '',
+    description: s.description || '', descLabel: s.descLabel || '',
+    theme: s.theme || 'original', imageUrl: s.imageUrl || '',
+    ctaText: s.ctaText || '', ctaUrl: s.ctaUrl || ''
+  };
   const ogDesc = stripMdToPlain(s.description, 200) || (s.location ? `En lydfortælling · ${s.location}` : 'En lydfortælling');
   const faviconTag = s.imageDataUrl ? `<link rel="icon" href="${s.imageDataUrl}">` : '';
   const ogImageTags = s.imageUrl ? `<meta property="og:image" content="${escapeHtml(s.imageUrl)}">
@@ -507,6 +525,7 @@ ${s.location ? `<meta name="story:location" content="${escapeHtml(s.location)}">
 <title>${escapeHtml(pageTitle)}</title>
 ${faviconTag}
 ${socialMeta}
+<script type="application/json" id="builder-source-data">${JSON.stringify(sourceData)}<\/script>
 <style>
   :root{
     --paper:${theme.paper}; --card:${theme.card}; --card-text:${theme.cardText}; --card-bg:${theme.cardBg};
@@ -602,8 +621,17 @@ ${socialMeta}
   .cta-btn:hover{ filter:brightness(0.92); }
   .cta-btn:active{ transform:translateY(1px); }
   .footer{
+    display:flex; align-items:center; justify-content:center; gap:8px;
     text-align:center; font-size:13px; color:var(--footer-color); padding:0 20px 20px; font-style:italic;
   }
+  .dl-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; padding:0; border-radius:50%;
+    border:1px solid var(--footer-color); background:transparent;
+    color:var(--footer-color); cursor:pointer; flex-shrink:0;
+  }
+  .dl-btn svg{ width:13px; height:13px; }
+  .dl-btn:hover{ opacity:0.75; }
 </style>
 </head>
 <body>
@@ -626,7 +654,12 @@ ${socialMeta}
     </div>
     ${descBlock}
     ${ctaBlock}
-    <div class="footer">En lydfortælling</div>
+    <div class="footer">
+      <span>En lydfortælling</span>
+      <button class="dl-btn" id="dlBtn" type="button" title="Download denne fil" aria-label="Download denne fil som HTML-fil">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+      </button>
+    </div>
   </div>
 
   <audio id="audio" preload="metadata" src="${audioSrc}"></audio>
@@ -688,6 +721,24 @@ ${socialMeta}
       const rect = ticksEl.getBoundingClientRect();
       const ratio = (e.clientX - rect.left) / rect.width;
       if (audio.duration) audio.currentTime = ratio * audio.duration;
+    });
+
+    const dlBtn = document.getElementById('dlBtn');
+    dlBtn.addEventListener('click', () => {
+      try {
+        const fullHtml = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+        const blob = new Blob([fullHtml], {type:'text/html'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '${safeName}.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch(e){
+        alert('Kunne ikke downloade filen: ' + e.message);
+      }
     });
   <\/script>
 </body>
@@ -757,6 +808,105 @@ $('audio').addEventListener('change', async (e) => {
   } catch(err){
     $('audioStatus').textContent = 'Fejl: ' + err.message;
     $('audioStatus').className = 'status pending';
+  }
+});
+
+function setField(id, value){
+  const el = $(id);
+  if (el) el.value = value || '';
+}
+
+function selectTheme(themeKey){
+  state.theme = THEMES[themeKey] ? themeKey : 'original';
+  document.querySelectorAll('#themePicker input[name="theme"]').forEach(r => {
+    r.checked = (r.value === state.theme);
+  });
+  document.querySelectorAll('#themePicker .theme-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.theme === state.theme);
+  });
+}
+
+function guessThemeFromRust(rustColor){
+  for (const key in THEMES){
+    if (THEMES[key].rust.toLowerCase() === (rustColor || '').toLowerCase()) return key;
+  }
+  return 'original';
+}
+
+$('loadPlayer').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $('loadStatus').textContent = 'Læser fil …';
+  $('loadStatus').className = 'status pending';
+  try {
+    const text = await file.text();
+    const doc = new DOMParser().parseFromString(text, 'text/html');
+    const dataScript = doc.getElementById('builder-source-data');
+
+    if (dataScript){
+      const data = JSON.parse(dataScript.textContent);
+      state.eyebrow = data.eyebrow || '';
+      state.title = data.title || '';
+      state.location = data.location || '';
+      state.description = data.description || '';
+      state.descLabel = data.descLabel || '';
+      state.imageUrl = data.imageUrl || '';
+      state.ctaText = data.ctaText || '';
+      state.ctaUrl = data.ctaUrl || '';
+      selectTheme(data.theme || 'original');
+    } else {
+      // Ældre fil uden gemt kildedata - bedste forsøg på at udlede felterne
+      const eyebrowEl = doc.querySelector('.eyebrow');
+      state.eyebrow = eyebrowEl ? eyebrowEl.textContent.replace(/^\s*[\u2764\uFE0F]*\s*/, '').trim() : '';
+      const titleEl = doc.querySelector('.title');
+      state.title = titleEl ? titleEl.textContent.trim() : '';
+      const locationEl = doc.querySelector('.location');
+      state.location = locationEl ? locationEl.textContent.trim() : '';
+      const descBodyEl = doc.querySelector('.desc-body');
+      state.description = descBodyEl ? descBodyEl.textContent.trim() : '';
+      const descLabelEl = doc.querySelector('.desc-label');
+      state.descLabel = descLabelEl ? descLabelEl.textContent.trim() : '';
+      const ctaEl = doc.querySelector('.cta-btn');
+      state.ctaText = ctaEl ? ctaEl.textContent.trim() : '';
+      state.ctaUrl = ctaEl ? (ctaEl.getAttribute('href') || '') : '';
+      state.imageUrl = '';
+      const rootStyle = doc.querySelector('style');
+      const rustMatch = rootStyle ? rootStyle.textContent.match(/--rust:\s*(#[0-9A-Fa-f]{3,6})/) : null;
+      selectTheme(guessThemeFromRust(rustMatch ? rustMatch[1] : ''));
+    }
+
+    const imgEl = doc.querySelector('.cover img');
+    if (imgEl && imgEl.src && imgEl.src.startsWith('data:')){
+      state.imageDataUrl = imgEl.src;
+      const kb = Math.round(state.imageDataUrl.length * 0.75 / 1024);
+      $('imageStatus').textContent = `Billede indlæst fra fil (~${kb} KB)`;
+      $('imageStatus').className = 'status';
+    }
+    const audioEl = doc.querySelector('#audio');
+    if (audioEl && audioEl.src && audioEl.src.startsWith('data:')){
+      state.audioDataUrl = audioEl.src;
+      state.audioType = state.audioDataUrl.slice(5, state.audioDataUrl.indexOf(';'));
+      const kb = Math.round(state.audioDataUrl.length * 0.75 / 1024);
+      $('audioStatus').textContent = `Lydfil indlæst fra fil (~${kb} KB)`;
+      $('audioStatus').className = 'status';
+    }
+
+    setField('eyebrow', state.eyebrow);
+    setField('title', state.title);
+    setField('location', state.location);
+    setField('description', state.description);
+    setField('descLabel', state.descLabel);
+    setField('imageUrl', state.imageUrl);
+    setField('ctaText', state.ctaText);
+    setField('ctaUrl', state.ctaUrl);
+
+    $('loadStatus').textContent = `Indlæst: ${file.name}`;
+    $('loadStatus').className = 'status';
+    renderPreview();
+    checkReady();
+  } catch(err){
+    $('loadStatus').textContent = 'Fejl ved indlæsning: ' + err.message;
+    $('loadStatus').className = 'status pending';
   }
 });
 
