@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="da"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lydfortællinger – Katalog</title>
+<style>
+  :root{
+    --paper:#FAF9F5;
+    --ink:#2A1620;
+    --muted:#6b5560;
+    --card-bg:#FFFFFF;
+    --line:#EAE2E5;
+    --accent:#9E2453;
+    --accent-ink:#FAF9F5;
+    --accent-soft:#F3E4EC;
+    --accent-soft-ink:#7A1B40;
+    --danger:#8E2C22;
+    --ok:#1F5D3A;
+    --radius:14px;
+    --sans: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--sans);
+    font-size:19px;
+    line-height:1.5;
+    padding-bottom:100px;
+  }
+  header{
+    background:var(--accent);
+    color:var(--accent-ink);
+    padding:34px 20px 30px;
+    text-align:center;
+  }
+  header h1{
+    margin:0 0 6px;
+    font-size:clamp(1.9rem, 5vw, 2.6rem);
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  header p{ margin:0; opacity:0.9; font-size:1.05rem; }
+
+  .toolbar{
+    max-width:900px; margin:-22px auto 0; padding:0 16px; position:relative; z-index:2;
+  }
+  .search-box{ position:relative; }
+  #search{
+    width:100%; padding:16px 46px 16px 18px; border-radius:12px; border:1px solid var(--line);
+    background:var(--card-bg); font-size:1rem; font-family:inherit; color:var(--ink);
+    box-shadow:0 6px 18px rgba(42,22,32,0.12);
+  }
+  #search:focus{ outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+  #search-clear{
+    display:none; position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border:none; border-radius:50%; background:transparent;
+    color:var(--muted); font-size:1.2rem; cursor:pointer;
+  }
+  #search-clear.visible{ display:block; }
+  #search-clear:hover{ background:var(--accent-soft); color:var(--accent); }
+
+  .filter-row{ display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 0; }
+  .filter-row[hidden]{ display:none; }
+  .chip{
+    border:1px solid var(--line); background:var(--card-bg); color:var(--ink);
+    padding:8px 14px; border-radius:999px; font-size:0.92rem; cursor:pointer; font-family:inherit;
+  }
+  .chip.active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .chip.tag{ font-size:0.85rem; padding:6px 12px; }
+  .chip.tag.active{ background:var(--accent-soft-ink); border-color:var(--accent-soft-ink); }
+
+  main{ max-width:900px; margin:0 auto; padding:24px 16px 0; }
+
+  .group-title{ font-size:1.05rem; font-weight:700; margin:26px 0 12px; color:var(--accent-soft-ink); }
+
+  .cards{ display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:18px; }
+  .card{
+    position:relative; background:var(--card-bg); border:1px solid var(--line); border-radius:var(--radius);
+    overflow:hidden; display:flex; flex-direction:column; box-shadow:0 4px 14px rgba(42,22,32,0.06);
+  }
+  .card .thumb{ width:100%; aspect-ratio:16/10; object-fit:cover; background:var(--accent-soft); display:block; }
+  .card .thumb-fallback{
+    width:100%; aspect-ratio:16/10; background:var(--accent-soft); display:flex;
+    align-items:center; justify-content:center; color:var(--accent-soft-ink);
+  }
+  .card .body{ padding:16px 16px 18px; display:flex; flex-direction:column; gap:8px; flex:1; }
+  .card .kategori{
+    align-self:flex-start; font-size:0.78rem; font-weight:700; text-transform:uppercase;
+    letter-spacing:0.04em; color:var(--accent); background:var(--accent-soft); padding:4px 10px; border-radius:999px;
+  }
+  .card h3{ margin:0; font-size:1.15rem; line-height:1.3; }
+  .card .sted{ font-size:0.88rem; color:var(--muted); margin:-4px 0 0; }
+  .card .beskrivelse{ font-size:0.95rem; color:var(--muted); margin:0; }
+  .card .tags{ display:flex; flex-wrap:wrap; gap:6px; margin-top:2px; }
+  .card .tags span{ font-size:0.78rem; color:var(--accent-soft-ink); background:var(--accent-soft); padding:3px 9px; border-radius:999px; }
+  .card .actions{ margin-top:auto; display:flex; align-items:center; gap:10px; padding-top:8px; }
+  .play-btn{
+    flex:1; text-align:center; text-decoration:none; background:var(--accent); color:var(--accent-ink);
+    padding:11px 14px; border-radius:10px; font-weight:700; font-size:0.98rem;
+  }
+  .play-btn:hover{ filter:brightness(0.94); }
+  .icon-btn{
+    border:1px solid var(--line); background:var(--card-bg); color:var(--muted); width:40px; height:40px;
+    border-radius:10px; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .pin-mark{ position:absolute; top:10px; right:12px; font-size:1.1rem; filter:drop-shadow(0 1px 1px rgba(0,0,0,0.25)); }
+
+  #empty-state{ text-align:center; color:var(--muted); padding:60px 20px; display:none; }
+  #empty-state.visible{ display:block; }
+
+  .add-fab, .save-fab{
+    position:fixed; right:20px; z-index:5; border:none; border-radius:999px; cursor:pointer;
+    font-family:inherit; font-weight:700; box-shadow:0 8px 20px rgba(42,22,32,0.22);
+  }
+  .add-fab{ bottom:20px; background:var(--ink); color:var(--paper); padding:16px 22px; font-size:1rem; }
+  .save-fab{
+    bottom:86px; background:var(--ok); color:#fff; padding:14px 20px; font-size:0.95rem;
+    opacity:0; transform:translateY(10px); pointer-events:none; transition:opacity .2s, transform .2s;
+  }
+  .save-fab.visible{ opacity:1; transform:translateY(0); pointer-events:auto; }
+
+  dialog{
+    border:none; border-radius:16px; padding:0; width:min(560px, 92vw); box-shadow:0 20px 60px rgba(0,0,0,0.3);
+  }
+  dialog::backdrop{ background:rgba(42,22,32,0.45); }
+  .dlg-head{ background:var(--accent); color:var(--accent-ink); padding:18px 22px; font-weight:700; font-size:1.15rem; }
+  .dlg-body{ padding:20px 22px; display:flex; flex-direction:column; gap:14px; max-height:70vh; overflow:auto; }
+  .field label{ display:block; font-size:0.88rem; font-weight:700; color:var(--muted); margin-bottom:5px; }
+  .field input, .field textarea{
+    width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:9px; font-family:inherit; font-size:0.98rem;
+  }
+  .field textarea{ min-height:70px; resize:vertical; }
+  .field-row{ display:flex; gap:12px; }
+  .field-row .field{ flex:1; }
+  .filepick{ border:1px dashed var(--line); border-radius:9px; padding:12px; font-size:0.88rem; color:var(--muted); }
+  .checkline{ display:flex; align-items:center; gap:8px; font-size:0.95rem; }
+  .dlg-foot{ padding:16px 22px 22px; display:flex; justify-content:space-between; gap:10px; }
+  .btn{ border:none; border-radius:9px; padding:11px 18px; font-family:inherit; font-weight:700; cursor:pointer; font-size:0.95rem; }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); }
+  .btn.ghost{ background:transparent; color:var(--muted); }
+  .btn.danger-text{ background:transparent; color:var(--danger); }
+  .status{ font-size:0.88rem; min-height:1.2em; }
+  .status.ok{ color:var(--ok); }
+  .status.fejl{ color:var(--danger); }
+
+  footer{ max-width:900px; margin:40px auto 0; padding:0 16px 30px; color:var(--muted); font-size:0.85rem; text-align:center; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Lydfortællinger</h1>
+  <p>Lokalhistorisk katalog · <span id="antal-tekst">2 fortællinger</span></p>
+</header>
+
+<div class="toolbar">
+  <div class="search-box">
+    <input type="text" id="search" placeholder="Søg efter titel, sted eller tag …" autocomplete="off">
+    <button type="button" id="search-clear" aria-label="Ryd søgning">×</button>
+  </div>
+  <div class="filter-row" id="kategori-filter"><button type="button" class="chip">Barndom</button></div>
+  <div class="filter-row" id="tag-filter"><button type="button" class="chip tag">1960'erne</button><button type="button" class="chip tag">grammofon</button></div>
+</div>
+
+<main>
+  <section id="pinned-section" style="display: none;">
+    <div class="group-title">Fastgjorte</div>
+    <div class="cards" id="pinned-cards"></div>
+  </section>
+
+  <section>
+    <div class="group-title" id="alle-titel">Fortællinger</div>
+    <div class="cards" id="alle-cards"><div class="card" data-id="e1"><img class="thumb" src="https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Phillips Rejsegrammofon</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.</p><div class="tags"><span>grammofon</span><span>1960'erne</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div><div class="card" data-id="e1785233644804612"><img class="thumb" src="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Danseskolen under jorden</h3><p class="beskrivelse">Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…</p><div class="actions"><a class="play-btn" href="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danseskolen-under-jorden.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div></div>
+  </section>
+
+  <div id="empty-state">Ingen fortællinger matcher søgningen eller filtrene.</div>
+</main>
+
+<footer>
+  Data for kataloget ligger indlejret i denne fil. Brug "Ny fortælling" til at tilføje,
+  og husk at klikke "Gem til fil" bagefter – det henter en opdateret udgave af denne side,
+  som skal erstatte den gamle fil.
+</footer>
+
+<button type="button" class="add-fab" id="add-fab">+ Ny fortælling</button>
+<button type="button" class="save-fab visible" id="save-fab">💾 Gem til fil</button>
+
+<dialog id="form-dialog">
+  <form method="dialog">
+    <div class="dlg-head" id="dlg-title">Rediger fortælling</div>
+    <div class="dlg-body">
+      <div class="filepick">
+        <strong>Genvej:</strong> vælg lydfortællingens HTML-fil, så udfyldes titel, beskrivelse,
+        billede og sted automatisk ud fra dens meta-tags.
+        <div style="margin-top:8px;"><input type="file" id="hent-fil" accept=".html,.htm"></div>
+      </div>
+
+      <div class="field">
+        <label for="f-titel">Titel *</label>
+        <input type="text" id="f-titel" required="">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="f-kategori">Kategori</label>
+          <input type="text" id="f-kategori" list="kategori-liste" placeholder="fx Barndom">
+          <datalist id="kategori-liste"><option value="Barndom"></option></datalist>
+        </div>
+        <div class="field">
+          <label for="f-sted">Sted</label>
+          <input type="text" id="f-sted" placeholder="fx Ringparken, Roskilde">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-tags">Tags (adskilt med komma)</label>
+        <input type="text" id="f-tags" placeholder="fx grammofon, 1960'erne">
+      </div>
+
+      <div class="field">
+        <label for="f-billede">Billede (URL eller relativ sti)</label>
+        <input type="text" id="f-billede" placeholder="fx billeder/phr.jpg">
+      </div>
+
+      <div class="field">
+        <label for="f-beskrivelse">Kort beskrivelse</label>
+        <textarea id="f-beskrivelse"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="f-link">Link til afspiller-fil *</label>
+        <input type="text" id="f-link" required="" placeholder="fx lydfortaellinger/phillips-rejsegrammofon.html">
+      </div>
+
+      <label class="checkline"><input type="checkbox" id="f-pinned"> Fastgør øverst</label>
+      <div class="status" id="f-status"></div>
+    </div>
+    <div class="dlg-foot">
+      <button type="button" class="btn danger-text" id="f-slet" style="display: inline-block;">Slet fortælling</button>
+      <div style="display:flex; gap:10px; margin-left:auto;">
+        <button type="button" class="btn ghost" id="f-luk">Annuller</button>
+        <button type="button" class="btn primary" id="f-gem">Gem ændring</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<script type="application/json" id="entries-data">[
+  {
+    "id": "e1",
+    "titel": "Phillips Rejsegrammofon",
+    "kategori": "Barndom",
+    "sted": "Ringparken, Roskilde",
+    "tags": [
+      "grammofon",
+      "1960'erne"
+    ],
+    "billede": "https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg",
+    "beskrivelse": "Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.",
+    "link": "https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html",
+    "pinned": false
+  },
+  {
+    "id": "e1785233644804612",
+    "titel": "Danseskolen under jorden",
+    "kategori": "Barndom",
+    "sted": "",
+    "tags": [],
+    "billede": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg",
+    "beskrivelse": "Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…",
+    "link": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danseskolen-under-jorden.html",
+    "pinned": false
+  }
+]</script>
+
+<script>
+(function(){
+  var LS_KEY = "lydkatalog_draft_v1";
+  var entries = [];
+  var dirty = false;
+  var editingId = null;
+  var valgtKategori = null;
+  var valgteTags = [];
+
+  function esc(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function nyId(){ return "e" + Date.now() + Math.floor(Math.random()*1000); }
+  function normTags(s){
+    return String(s || "").split(",").map(function(t){ return t.trim(); }).filter(Boolean);
+  }
+
+  function loadInitial(){
+    try{
+      var raw = document.getElementById("entries-data").textContent;
+      entries = JSON.parse(raw) || [];
+    }catch(e){ entries = []; }
+    try{
+      var draft = localStorage.getItem(LS_KEY);
+      if(draft){
+        entries = JSON.parse(draft);
+        dirty = true;
+      }
+    }catch(e){}
+  }
+
+  function saveDraft(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(entries)); }catch(e){}
+  }
+  function clearDraft(){
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  }
+  function markDirty(){
+    dirty = true;
+    saveDraft();
+    updateSaveFab();
+  }
+  function updateSaveFab(){
+    document.getElementById("save-fab").classList.toggle("visible", dirty);
+  }
+
+  function alleKategorier(){
+    var set = {};
+    entries.forEach(function(e){ if(e.kategori) set[e.kategori] = true; });
+    return Object.keys(set).sort();
+  }
+  function alleTags(){
+    var set = {};
+    entries.forEach(function(e){ (e.tags||[]).forEach(function(t){ set[t] = true; }); });
+    return Object.keys(set).sort();
+  }
+
+  function renderFiltre(){
+    var kWrap = document.getElementById("kategori-filter");
+    var tWrap = document.getElementById("tag-filter");
+    var kategorier = alleKategorier();
+    var tags = alleTags();
+
+    kWrap.innerHTML = "";
+    kWrap.hidden = kategorier.length === 0;
+    kategorier.forEach(function(k){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (valgtKategori === k ? " active" : "");
+      b.textContent = k;
+      b.addEventListener("click", function(){
+        valgtKategori = (valgtKategori === k) ? null : k;
+        renderFiltre();
+        render();
+      });
+      kWrap.appendChild(b);
+    });
+
+    tWrap.innerHTML = "";
+    tWrap.hidden = tags.length === 0;
+    tags.forEach(function(t){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip tag" + (valgteTags.indexOf(t) > -1 ? " active" : "");
+      b.textContent = t;
+      b.addEventListener("click", function(){
+        var i = valgteTags.indexOf(t);
+        if(i > -1) valgteTags.splice(i, 1); else valgteTags.push(t);
+        renderFiltre();
+        render();
+      });
+      tWrap.appendChild(b);
+    });
+
+    var dl = document.getElementById("kategori-liste");
+    dl.innerHTML = kategorier.map(function(k){ return "<option value=\"" + esc(k) + "\">"; }).join("");
+  }
+
+  function matcher(e, q){
+    if(valgtKategori && e.kategori !== valgtKategori) return false;
+    if(valgteTags.length && !(e.tags||[]).some(function(t){ return valgteTags.indexOf(t) > -1; })) return false;
+    if(!q) return true;
+    var hay = [e.titel, e.beskrivelse, e.kategori, e.sted].concat(e.tags||[]).join(" ").toLowerCase();
+    return hay.indexOf(q) > -1;
+  }
+
+  function cardHtml(e){
+    var img = e.billede
+      ? "<img class=\"thumb\" src=\"" + esc(e.billede) + "\" alt=\"\" loading=\"lazy\">"
+      : "<div class=\"thumb-fallback\">🎙️</div>";
+    var tags = (e.tags||[]).map(function(t){ return "<span>" + esc(t) + "</span>"; }).join("");
+    var kategori = e.kategori ? "<span class=\"kategori\">" + esc(e.kategori) + "</span>" : "";
+    var sted = e.sted ? "<p class=\"sted\">📍 " + esc(e.sted) + "</p>" : "";
+    var pin = e.pinned ? "<span class=\"pin-mark\">📌</span>" : "";
+    return (
+      "<div class=\"card\" data-id=\"" + esc(e.id) + "\">" +
+        pin + img +
+        "<div class=\"body\">" +
+          kategori +
+          "<h3>" + esc(e.titel) + "</h3>" +
+          sted +
+          "<p class=\"beskrivelse\">" + esc(e.beskrivelse || "") + "</p>" +
+          (tags ? "<div class=\"tags\">" + tags + "</div>" : "") +
+          "<div class=\"actions\">" +
+            "<a class=\"play-btn\" href=\"" + esc(e.link) + "\" target=\"_blank\" rel=\"noopener\">▶ Afspil</a>" +
+            "<button type=\"button\" class=\"icon-btn\" data-action=\"rediger\" title=\"Rediger\">✎</button>" +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function render(){
+    var q = document.getElementById("search").value.trim().toLowerCase();
+    var pinned = entries.filter(function(e){ return e.pinned && matcher(e, q); });
+    var resten = entries.filter(function(e){ return !e.pinned && matcher(e, q); });
+
+    document.getElementById("pinned-section").style.display = pinned.length ? "block" : "none";
+    document.getElementById("pinned-cards").innerHTML = pinned.map(cardHtml).join("");
+    document.getElementById("alle-cards").innerHTML = resten.map(cardHtml).join("");
+    document.getElementById("alle-titel").textContent = pinned.length ? "Alle fortællinger" : "Fortællinger";
+
+    var ingenResultater = (pinned.length + resten.length) === 0;
+    document.getElementById("empty-state").classList.toggle("visible", ingenResultater);
+    document.getElementById("antal-tekst").textContent =
+      entries.length + (entries.length === 1 ? " fortælling" : " fortællinger");
+
+    document.querySelectorAll("[data-action='rediger']").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.closest(".card").getAttribute("data-id");
+        aabnRedigering(id);
+      });
+    });
+  }
+
+  function aabnDialog(){
+    document.getElementById("form-dialog").showModal();
+  }
+  function nulstilForm(){
+    ["f-titel","f-kategori","f-sted","f-tags","f-billede","f-beskrivelse","f-link"].forEach(function(id){
+      document.getElementById(id).value = "";
+    });
+    document.getElementById("f-pinned").checked = false;
+    document.getElementById("f-status").textContent = "";
+    document.getElementById("f-status").className = "status";
+    document.getElementById("hent-fil").value = "";
+  }
+
+  function aabnNy(){
+    editingId = null;
+    nulstilForm();
+    document.getElementById("dlg-title").textContent = "Ny fortælling";
+    document.getElementById("f-gem").textContent = "Tilføj";
+    document.getElementById("f-slet").style.display = "none";
+    aabnDialog();
+  }
+
+  function aabnRedigering(id){
+    var e = entries.find(function(x){ return x.id === id; });
+    if(!e) return;
+    editingId = id;
+    document.getElementById("f-titel").value = e.titel || "";
+    document.getElementById("f-kategori").value = e.kategori || "";
+    document.getElementById("f-sted").value = e.sted || "";
+    document.getElementById("f-tags").value = (e.tags||[]).join(", ");
+    document.getElementById("f-billede").value = e.billede || "";
+    document.getElementById("f-beskrivelse").value = e.beskrivelse || "";
+    document.getElementById("f-link").value = e.link || "";
+    document.getElementById("f-pinned").checked = !!e.pinned;
+    document.getElementById("f-status").textContent = "";
+    document.getElementById("f-status").className = "status";
+    document.getElementById("dlg-title").textContent = "Rediger fortælling";
+    document.getElementById("f-gem").textContent = "Gem ændring";
+    document.getElementById("f-slet").style.display = "inline-block";
+    aabnDialog();
+  }
+
+  function gemFraForm(){
+    var titel = document.getElementById("f-titel").value.trim();
+    var link = document.getElementById("f-link").value.trim();
+    var status = document.getElementById("f-status");
+    if(!titel || !link){
+      status.textContent = "Titel og link skal udfyldes.";
+      status.className = "status fejl";
+      return;
+    }
+    var data = {
+      titel: titel,
+      kategori: document.getElementById("f-kategori").value.trim(),
+      sted: document.getElementById("f-sted").value.trim(),
+      tags: normTags(document.getElementById("f-tags").value),
+      billede: document.getElementById("f-billede").value.trim(),
+      beskrivelse: document.getElementById("f-beskrivelse").value.trim(),
+      link: link,
+      pinned: document.getElementById("f-pinned").checked
+    };
+    if(editingId){
+      var i = entries.findIndex(function(x){ return x.id === editingId; });
+      if(i > -1) entries[i] = Object.assign({id: editingId}, data);
+    } else {
+      data.id = nyId();
+      entries.push(data);
+    }
+    markDirty();
+    renderFiltre();
+    render();
+    document.getElementById("form-dialog").close();
+  }
+
+  function sletFraForm(){
+    if(!editingId) return;
+    if(!confirm("Slet denne fortælling fra kataloget?")) return;
+    entries = entries.filter(function(x){ return x.id !== editingId; });
+    markDirty();
+    renderFiltre();
+    render();
+    document.getElementById("form-dialog").close();
+  }
+
+  function hentFraFil(file){
+    var status = document.getElementById("f-status");
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var doc = new DOMParser().parseFromString(reader.result, "text/html");
+        var get = function(sel, attr){
+          var el = doc.querySelector(sel);
+          return el ? (el.getAttribute(attr) || "") : "";
+        };
+        var titel = get('meta[property="og:title"]', "content") || doc.title || "";
+        var beskrivelse = get('meta[property="og:description"]', "content");
+        var billede = get('meta[property="og:image"]', "content");
+        var sted = get('meta[name="story:location"]', "content");
+        if(titel) document.getElementById("f-titel").value = titel;
+        if(beskrivelse) document.getElementById("f-beskrivelse").value = beskrivelse;
+        if(billede) document.getElementById("f-billede").value = billede;
+        if(sted) document.getElementById("f-sted").value = sted;
+        if(!document.getElementById("f-link").value) document.getElementById("f-link").value = file.name;
+        status.textContent = "Udfyldt fra filens meta-tags. Tjek link, kategori og tags.";
+        status.className = "status ok";
+      }catch(e){
+        status.textContent = "Kunne ikke læse filen. Udfyld felterne manuelt.";
+        status.className = "status fejl";
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function gemTilFil(){
+    document.getElementById("entries-data").textContent = JSON.stringify(entries, null, 2);
+    var html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    var blob = new Blob([html], {type: "text/html;charset=utf-8"});
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    var nuvaerende = (location.pathname.split("/").pop() || "lydfortaelling-katalog.html");
+    a.download = nuvaerende.indexOf(".html") > -1 ? nuvaerende : "lydfortaelling-katalog.html";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    dirty = false;
+    clearDraft();
+    updateSaveFab();
+  }
+
+  document.getElementById("search").addEventListener("input", function(){
+    document.getElementById("search-clear").classList.toggle("visible", !!this.value);
+    render();
+  });
+  document.getElementById("search-clear").addEventListener("click", function(){
+    document.getElementById("search").value = "";
+    this.classList.remove("visible");
+    render();
+  });
+  document.getElementById("add-fab").addEventListener("click", aabnNy);
+  document.getElementById("save-fab").addEventListener("click", gemTilFil);
+  document.getElementById("f-gem").addEventListener("click", gemFraForm);
+  document.getElementById("f-slet").addEventListener("click", sletFraForm);
+  document.getElementById("f-luk").addEventListener("click", function(){
+    document.getElementById("form-dialog").close();
+  });
+  document.getElementById("hent-fil").addEventListener("change", function(){
+    if(this.files && this.files[0]) hentFraFil(this.files[0]);
+  });
+
+  loadInitial();
+  renderFiltre();
+  render();
+  updateSaveFab();
+})();
+</script>
+
+
+
+</body></html>
