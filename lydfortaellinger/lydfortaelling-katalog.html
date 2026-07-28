@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="da"><head>
+<html lang="da">
+<head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lydfortællinger – Katalog</title>
@@ -153,7 +154,7 @@
 
 <header>
   <h1>Lydfortællinger</h1>
-  <p>Lokalhistorisk katalog · <span id="antal-tekst">2 fortællinger</span></p>
+  <p>Lokalhistorisk katalog · <span id="antal-tekst"></span></p>
 </header>
 
 <div class="toolbar">
@@ -161,19 +162,19 @@
     <input type="text" id="search" placeholder="Søg efter titel, sted eller tag …" autocomplete="off">
     <button type="button" id="search-clear" aria-label="Ryd søgning">×</button>
   </div>
-  <div class="filter-row" id="kategori-filter"><button type="button" class="chip">Barndom</button></div>
-  <div class="filter-row" id="tag-filter"><button type="button" class="chip tag">1960'erne</button><button type="button" class="chip tag">grammofon</button></div>
+  <div class="filter-row" id="kategori-filter"></div>
+  <div class="filter-row" id="tag-filter"></div>
 </div>
 
 <main>
-  <section id="pinned-section" style="display: none;">
+  <section id="pinned-section" style="display:none;">
     <div class="group-title">Fastgjorte</div>
     <div class="cards" id="pinned-cards"></div>
   </section>
 
   <section>
-    <div class="group-title" id="alle-titel">Fortællinger</div>
-    <div class="cards" id="alle-cards"><div class="card" data-id="e1"><img class="thumb" src="https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Phillips Rejsegrammofon</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.</p><div class="tags"><span>grammofon</span><span>1960'erne</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div><div class="card" data-id="e1785233644804612"><img class="thumb" src="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Danseskolen under jorden</h3><p class="beskrivelse">Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…</p><div class="actions"><a class="play-btn" href="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danseskolen-under-jorden.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div></div>
+    <div class="group-title" id="alle-titel">Alle fortællinger</div>
+    <div class="cards" id="alle-cards"></div>
   </section>
 
   <div id="empty-state">Ingen fortællinger matcher søgningen eller filtrene.</div>
@@ -186,11 +187,11 @@
 </footer>
 
 <button type="button" class="add-fab" id="add-fab">+ Ny fortælling</button>
-<button type="button" class="save-fab visible" id="save-fab">💾 Gem til fil</button>
+<button type="button" class="save-fab" id="save-fab">💾 Gem til fil</button>
 
 <dialog id="form-dialog">
   <form method="dialog">
-    <div class="dlg-head" id="dlg-title">Rediger fortælling</div>
+    <div class="dlg-head" id="dlg-title">Ny fortælling</div>
     <div class="dlg-body">
       <div class="filepick">
         <strong>Genvej:</strong> vælg lydfortællingens HTML-fil, så udfyldes titel, beskrivelse,
@@ -200,14 +201,14 @@
 
       <div class="field">
         <label for="f-titel">Titel *</label>
-        <input type="text" id="f-titel" required="">
+        <input type="text" id="f-titel" required>
       </div>
 
       <div class="field-row">
         <div class="field">
           <label for="f-kategori">Kategori</label>
           <input type="text" id="f-kategori" list="kategori-liste" placeholder="fx Barndom">
-          <datalist id="kategori-liste"><option value="Barndom"></option></datalist>
+          <datalist id="kategori-liste"></datalist>
         </div>
         <div class="field">
           <label for="f-sted">Sted</label>
@@ -232,49 +233,37 @@
 
       <div class="field">
         <label for="f-link">Link til afspiller-fil *</label>
-        <input type="text" id="f-link" required="" placeholder="fx lydfortaellinger/phillips-rejsegrammofon.html">
+        <input type="text" id="f-link" required placeholder="fx lydfortaellinger/phillips-rejsegrammofon.html">
       </div>
 
       <label class="checkline"><input type="checkbox" id="f-pinned"> Fastgør øverst</label>
       <div class="status" id="f-status"></div>
     </div>
     <div class="dlg-foot">
-      <button type="button" class="btn danger-text" id="f-slet" style="display: inline-block;">Slet fortælling</button>
+      <button type="button" class="btn danger-text" id="f-slet" style="display:none;">Slet fortælling</button>
       <div style="display:flex; gap:10px; margin-left:auto;">
         <button type="button" class="btn ghost" id="f-luk">Annuller</button>
-        <button type="button" class="btn primary" id="f-gem">Gem ændring</button>
+        <button type="button" class="btn primary" id="f-gem">Tilføj</button>
       </div>
     </div>
   </form>
 </dialog>
 
-<script type="application/json" id="entries-data">[
+<script type="application/json" id="entries-data">
+[
   {
     "id": "e1",
     "titel": "Phillips Rejsegrammofon",
     "kategori": "Barndom",
-    "sted": "Ringparken, Roskilde",
-    "tags": [
-      "grammofon",
-      "1960'erne"
-    ],
+    "tags": ["grammofon", "1960'erne"],
     "billede": "https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg",
     "beskrivelse": "Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.",
-    "link": "https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html",
-    "pinned": false
-  },
-  {
-    "id": "e1785233644804612",
-    "titel": "Danseskolen under jorden",
-    "kategori": "Barndom",
-    "sted": "",
-    "tags": [],
-    "billede": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg",
-    "beskrivelse": "Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…",
-    "link": "https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danseskolen-under-jorden.html",
-    "pinned": false
+    "sted": "Ringparken, Roskilde",
+    "link": "https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html",
+    "pinned": true
   }
-]</script>
+]
+</script>
 
 <script>
 (function(){
@@ -284,6 +273,9 @@
   var editingId = null;
   var valgtKategori = null;
   var valgteTags = [];
+  var LOKAL = (location.protocol === "file:") ||
+              /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  var REDIGERBAR = LOKAL || location.hash.toLowerCase() === "#rediger";
 
   function esc(s){
     return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
@@ -300,13 +292,15 @@
       var raw = document.getElementById("entries-data").textContent;
       entries = JSON.parse(raw) || [];
     }catch(e){ entries = []; }
-    try{
-      var draft = localStorage.getItem(LS_KEY);
-      if(draft){
-        entries = JSON.parse(draft);
-        dirty = true;
-      }
-    }catch(e){}
+    if(REDIGERBAR){
+      try{
+        var draft = localStorage.getItem(LS_KEY);
+        if(draft){
+          entries = JSON.parse(draft);
+          dirty = true;
+        }
+      }catch(e){}
+    }
   }
 
   function saveDraft(){
@@ -403,7 +397,7 @@
           (tags ? "<div class=\"tags\">" + tags + "</div>" : "") +
           "<div class=\"actions\">" +
             "<a class=\"play-btn\" href=\"" + esc(e.link) + "\" target=\"_blank\" rel=\"noopener\">▶ Afspil</a>" +
-            "<button type=\"button\" class=\"icon-btn\" data-action=\"rediger\" title=\"Rediger\">✎</button>" +
+            (REDIGERBAR ? "<button type=\"button\" class=\"icon-btn\" data-action=\"rediger\" title=\"Rediger\">✎</button>" : "") +
           "</div>" +
         "</div>" +
       "</div>"
@@ -447,6 +441,7 @@
   }
 
   function aabnNy(){
+    if(!REDIGERBAR) return;
     editingId = null;
     nulstilForm();
     document.getElementById("dlg-title").textContent = "Ny fortælling";
@@ -456,6 +451,7 @@
   }
 
   function aabnRedigering(id){
+    if(!REDIGERBAR) return;
     var e = entries.find(function(x){ return x.id === id; });
     if(!e) return;
     editingId = id;
@@ -581,14 +577,20 @@
   document.getElementById("hent-fil").addEventListener("change", function(){
     if(this.files && this.files[0]) hentFraFil(this.files[0]);
   });
+  window.addEventListener("beforeunload", function(e){
+    if(dirty && REDIGERBAR){ e.preventDefault(); e.returnValue = ""; }
+  });
 
   loadInitial();
+  if(!REDIGERBAR){
+    document.getElementById("add-fab").style.display = "none";
+    document.getElementById("save-fab").style.display = "none";
+  }
   renderFiltre();
   render();
   updateSaveFab();
 })();
 </script>
 
-
-
-</body></html>
+</body>
+</html>
