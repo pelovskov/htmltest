@@ -166,14 +166,14 @@
 </div>
 
 <main>
-  <section id="pinned-section" style="display: block;">
+  <section id="pinned-section" style="display: none;">
     <div class="group-title">Fastgjorte</div>
-    <div class="cards" id="pinned-cards"><div class="card" data-id="e1"><span class="pin-mark">📌</span><img class="thumb" src="https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Phillips Rejsegrammofon</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.</p><div class="tags"><span>grammofon</span><span>1960'erne</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div></div>
+    <div class="cards" id="pinned-cards"></div>
   </section>
 
   <section>
-    <div class="group-title" id="alle-titel">Alle fortællinger</div>
-    <div class="cards" id="alle-cards"><div class="card" data-id="e1785237135743528"><img class="thumb" src="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Danseskolen under jorden</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…</p><div class="tags"><span>grammofon</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/danseskolen-under-jorden.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div></div>
+    <div class="group-title" id="alle-titel">Fortællinger</div>
+    <div class="cards" id="alle-cards"><div class="card" data-id="e1"><img class="thumb" src="https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Phillips Rejsegrammofon</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.</p><div class="tags"><span>grammofon</span><span>1960'erne</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div><div class="card" data-id="e1785237135743528"><img class="thumb" src="https://filedn.eu/lvW7yLqOapbRqv3FivAWHX5/Lydfort%C3%A6llinger/danss.jpg" alt="" loading="lazy"><div class="body"><span class="kategori">Barndom</span><h3>Danseskolen under jorden</h3><p class="sted">📍 Ringparken, Roskilde</p><p class="beskrivelse">Under Jorden Under bageren og HB Brugsen, i Ringparken, var der en danseskole. Det var Karen Magrethe og Volmer Hansen der drev skolen. Det var et magisk sted jeg husker nu mest Volmer Hansens to sto…</p><div class="tags"><span>grammofon</span></div><div class="actions"><a class="play-btn" href="https://pelovskov.github.io/pelapps/lydfortaellinger/danseskolen-under-jorden.html" target="_blank" rel="noopener">▶ Afspil</a><button type="button" class="icon-btn" data-action="rediger" title="Rediger">✎</button></div></div></div></div>
   </section>
 
   <div id="empty-state">Ingen fortællinger matcher søgningen eller filtrene.</div>
@@ -190,7 +190,7 @@
 
 <dialog id="form-dialog">
   <form method="dialog">
-    <div class="dlg-head" id="dlg-title">Ny fortælling</div>
+    <div class="dlg-head" id="dlg-title">Rediger fortælling</div>
     <div class="dlg-body">
       <div class="filepick">
         <strong>Genvej:</strong> vælg lydfortællingens HTML-fil, så udfyldes titel, beskrivelse,
@@ -236,13 +236,13 @@
       </div>
 
       <label class="checkline"><input type="checkbox" id="f-pinned"> Fastgør øverst</label>
-      <div class="status ok" id="f-status">Udfyldt fra filens meta-tags. Tjek link, kategori og tags.</div>
+      <div class="status" id="f-status"></div>
     </div>
     <div class="dlg-foot">
-      <button type="button" class="btn danger-text" id="f-slet" style="display:none;">Slet fortælling</button>
+      <button type="button" class="btn danger-text" id="f-slet" style="display: inline-block;">Slet fortælling</button>
       <div style="display:flex; gap:10px; margin-left:auto;">
         <button type="button" class="btn ghost" id="f-luk">Annuller</button>
-        <button type="button" class="btn primary" id="f-gem">Tilføj</button>
+        <button type="button" class="btn primary" id="f-gem">Gem ændring</button>
       </div>
     </div>
   </form>
@@ -253,15 +253,15 @@
     "id": "e1",
     "titel": "Phillips Rejsegrammofon",
     "kategori": "Barndom",
+    "sted": "Ringparken, Roskilde",
     "tags": [
       "grammofon",
       "1960'erne"
     ],
     "billede": "https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg",
     "beskrivelse": "Omkring 1963 eller 64 fik jeg en Phillips Rejsegrammofon. Det var en fantastisk ting at have på værelset.",
-    "sted": "Ringparken, Roskilde",
     "link": "https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html",
-    "pinned": true
+    "pinned": false
   },
   {
     "titel": "Danseskolen under jorden",
