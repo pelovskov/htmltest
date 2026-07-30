@@ -5,8 +5,6 @@ Her er en lille forklaring på filerne i mappen her.
 - [Danseskolen Under Jorden](https://pelovskov.github.io/pelapps/lydfortaellinger/danseskolen-under-jorden.html)
 - [Lydfortaelling Katalog](https://pelovskov.github.io/pelapps/lydfortaellinger/lydfortaelling-katalog.html)
 - [Moerket Over Roskilde](https://pelovskov.github.io/pelapps/lydfortaellinger/moerket-over-roskilde.html)
-- ![Pel 1](https://pelovskov.github.io/pelapps/lydfortaellinger/pel-1.jpg)
 - [Phillips Grammofon](https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html)
 - [Phillips Rejsegrammofon](https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html)
-- ![Phr Contrast](https://pelovskov.github.io/pelapps/lydfortaellinger/phr_contrast.jpg)
 - [Readme](https://pelovskov.github.io/pelapps/lydfortaellinger/readme.md)
