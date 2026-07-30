@@ -7,4 +7,5 @@ Her er en lille forklaring på filerne i mappen her.
 - [Moerket Over Roskilde](https://pelovskov.github.io/pelapps/lydfortaellinger/moerket-over-roskilde.html)
 - [Phillips Grammofon](https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-grammofon.html)
 - [Phillips Rejsegrammofon](https://pelovskov.github.io/pelapps/lydfortaellinger/phillips-rejsegrammofon.html)
-- [Readme](https://pelovskov.github.io/pelapps/lydfortaellinger/readme.md)
+
+**Da siden er i Markdown, så bør du åbne links i en ny fane**
