@@ -1,0 +1,57 @@
+<!-- ================================================================
+     TÆLLER — indsættes lige før </body>
+     Ret KUN de to linjer markeret med  <<< RET
+     ================================================================ -->
+<script>
+(function () {
+  try {
+    var ID   = "SKIFT-MIG";                              // <<< RET: fast ID for denne fil
+    var BASE = "https://stat.ditdomaene.dk/t/p.php";     // <<< RET: din egen adresse
+
+    if (ID === "SKIFT-MIG") { return; }
+
+    var titel = (document.title || "").substring(0, 120);
+    var sendt = {};
+
+    function husket(navn) {
+      // Én tælling pr. fane. sessionStorage kan være blokeret ved file://,
+      // så vi falder tilbage på en almindelig variabel.
+      var noegle = "tlr:" + ID + ":" + navn;
+      try {
+        if (window.sessionStorage.getItem(noegle)) { return true; }
+        window.sessionStorage.setItem(noegle, "1");
+        return false;
+      } catch (e) {
+        if (sendt[navn]) { return true; }
+        sendt[navn] = true;
+        return false;
+      }
+    }
+
+    function ping(haendelse) {
+      try {
+        if (husket(haendelse)) { return; }
+        new Image().src = BASE
+          + "?id=" + encodeURIComponent(ID)
+          + "&e="  + encodeURIComponent(haendelse)
+          + "&t="  + encodeURIComponent(titel)
+          + "&r="  + Math.random().toString(36).slice(2);
+      } catch (e) {}
+    }
+
+    // Filen blev åbnet
+    ping("open");
+
+    // Afspilning: fanges automatisk for alle <audio> og <video> på siden,
+    // også dem der først bliver lagt ind senere. Kræver ingen ændringer
+    // i selve afspilleren.
+    document.addEventListener("play", function () { ping("play"); }, true);
+
+    // Til manuelle kald andre steder i filen, fx i et galleris lightbox:
+    //   window.__taeller && window.__taeller("image");
+    window.__taeller = ping;
+
+  } catch (e) { /* Tælleren må aldrig kunne vælte selve filen */ }
+})();
+</script>
+<!-- ==================== TÆLLER SLUT ==================== -->
