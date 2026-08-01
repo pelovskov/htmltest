@@ -230,5 +230,55 @@
       }
     });
   </script>
+  <!-- ================================================================
+     TÆLLER — indsættes lige før </body>
+     ================================================================ -->
+<script>
+(function () {
+  try {
+    var ID   = "lyd-uden-emne-2026-fuaf";
+    var BASE = "https://sfbbilleder.eu/over/t/p.php";
+
+    if (ID === "SKIFT-MIG") { return; }
+
+    var titel = (document.title || "").substring(0, 120);
+    var sendt = {};
+
+    function husket(navn) {
+      var noegle = "tlr:" + ID + ":" + navn;
+      try {
+        if (window.sessionStorage.getItem(noegle)) { return true; }
+        window.sessionStorage.setItem(noegle, "1");
+        return false;
+      } catch (e) {
+        if (sendt[navn]) { return true; }
+        sendt[navn] = true;
+        return false;
+      }
+    }
+
+    function ping(haendelse) {
+      try {
+        if (husket(haendelse)) { return; }
+        new Image().src = BASE
+          + "?id=" + encodeURIComponent(ID)
+          + "&e="  + encodeURIComponent(haendelse)
+          + "&t="  + encodeURIComponent(titel)
+          + "&r="  + Math.random().toString(36).slice(2);
+      } catch (e) {}
+    }
+
+    ping("open");
+
+    document.addEventListener("play", function () { ping("play"); }, true);
+
+    // Til manuelle kald, fx i et galleris lightbox:
+    //   window.__taeller && window.__taeller("image");
+    window.__taeller = ping;
+
+  } catch (e) {}
+})();
+</script>
+<!-- ==================== TÆLLER SLUT ==================== -->
 </body>
 </html>
