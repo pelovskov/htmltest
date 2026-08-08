@@ -1,5 +1,5 @@
-LOKALT DASHBOARD - én html-fil, ingen server
-=============================================
+## LOKALT DASHBOARD - én html-fil, ingen server
+
 
 FILEN
 -----
